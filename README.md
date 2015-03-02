@@ -1,4 +1,4 @@
-  evoJs
+  evoJS
 =========
 
 evoJS is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
