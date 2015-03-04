@@ -1,0 +1,61 @@
+## Utility Functions
+evo.util =
+    
+    random: (min = -1, max = 1)->
+        (Math.random() * (max - min)) + min
+
+    sin: (x, freq=1, phase=0)->
+        Math.sin x * freq * 6.2832 + phase
+
+    gaussian: (x,mu,sigma)->
+        Math.exp -(mu-x)**2 * sigma
+
+    linear: (x, m, b)-> 
+        (x + b) * m
+
+    flatten: (x)->
+        return 1 if x > 1
+        return -1 if x < -1
+        return x
+
+    tanh: (x)->
+        if -3 > x or x > 3
+            return evo.util.flatten x
+        else
+            x1 = Math.exp x
+            x2 = Math.exp -x
+            return (x1-x2)/(x1+x2)
+
+    sample: (array)->
+        array[Math.floor(Math.random() * array.length)]
+
+    shuffle: (array)->
+        length = array.length
+        shuffled = Array length
+        for index in [0..length-1]
+            rand = Math.floor(Math.random() * index)
+            shuffled[index] = shuffled[rand] if rand != index
+            shuffled[rand] = array[index]
+
+        return shuffled
+
+    clone: (obj)->
+        return obj if null == obj or "object" != typeof obj
+        copy = obj.constructor()
+        for attr of obj
+            copy[attr] = obj[attr] if obj.hasOwnProperty(attr)
+
+        return copy
+
+    extend: (destination, source)->
+        destination = evo.util.clone(destination)
+        return destination unless source?
+
+        for property of source
+            if source[property] and source[property].constructor and source[property].constructor == Object
+                destination[property] = destination[property] or {}
+                arguments.callee(destination[property], source[property])
+            else
+                destination[property] = source[property]
+
+        return destination

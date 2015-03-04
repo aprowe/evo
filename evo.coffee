@@ -1,5 +1,5 @@
 ##
-# evo.js v0.1 2/1/2015
+# evo.js v0.1.0
 # A genetic algorithm calculator with ANN
 # Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
@@ -19,10 +19,8 @@
         root.evo = factory.call root
 
 )(window? ? window : this, ->
-    
-    ## Main Evo Object
-    evo = {}
 
+    evo = {}
     ## Default Configuration Object
     evo.config = 
         pool:
@@ -69,7 +67,9 @@
             output_nodes: 3
             input_nodes: 2
 
+    ## Utility Functions
     evo.util =
+        
         random: (min = -1, max = 1)->
             (Math.random() * (max - min)) + min
 
@@ -129,6 +129,7 @@
 
             return destination
 
+    ## Base Class
     class Base
         config: {}
 
@@ -139,6 +140,8 @@
         trigger: (name, args=null) ->
             @config['on_'+name].call(this, args) if @config['on_' + name]?
 
+
+    ## Pool Class
 
     class Pool extends Base
         constructor: (@config)->
@@ -321,10 +324,22 @@
         config = evo.util.extend evo.config.pool, config
         return new Pool(config)
 
+    ## Network Class
 
     class Network
         constructor: (genes, @config)->
         calc: (input)->
+
+    ## Factory Function
+    evo.network = (type, weights, config)->
+        config = evo.util.extend evo.config.network, config
+
+        if type is 'feedforward'
+            return new FeedForward(weights, config)
+        else if type is 'cppn'
+            return new Cppn(weights, config)
+           
+    ## Compositional Pattern Producing Network
 
     class Cppn extends Network
         @node_fn: [
@@ -390,7 +405,8 @@
                 output[j] = evo.util.tanh output[j]
 
             return output
-
+            
+    ## Classic Feed Forward Network
 
     class FeedForward extends Network
 
@@ -427,14 +443,7 @@
 
             return output_weights
 
-    evo.network = (type, weights, config)->
-        config = evo.util.extend evo.config.network, config
 
-        if type is 'feedforward'
-            return new FeedForward(weights, config)
-        else if type is 'cppn'
-            return new Cppn(weights, config)
-
-    return evo
+    return evo 
 )
 

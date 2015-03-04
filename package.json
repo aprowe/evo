@@ -1,0 +1,35 @@
+{
+  "name": "evo",
+  "version": "0.1.0",
+  "description": "Evolutionary Algorithm Calculator",
+  "main": "evo.coffee",
+  "scripts": {
+    "test": "coffee -c evo.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aprowe/evojs.git"
+  },
+  "keywords": [
+    "evolutionary",
+    "algorithm",
+    "neural",
+    "network",
+    "cppn"
+  ],
+  "author": "Alex Rowe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aprowe/evojs/issues"
+  },
+  "homepage": "https://github.com/aprowe/evojs",
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "grunt-contrib-coffee": "~0.13.0",
+    "grunt-contrib-concat": "~0.5.1",
+    "grunt-contrib-jshint": "~0.10.0",
+    "grunt-contrib-nodeunit": "~0.4.1",
+    "grunt-contrib-uglify": "~0.5.0",
+    "grunt-contrib-watch": "^0.6.1"
+  }
+}
