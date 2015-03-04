@@ -180,8 +180,11 @@
         ## Methods for generating genomes
         ## -------------------------------
 
+        ## Function for each gene in a genome
+        seed: -> evo.util.random()*@config.mutate_amount 
+
         ## Create a fresh random genome 
-        fresh: -> (evo.util.random()*@config.mutate_amount for i in [1..@config.n_genes])
+        fresh: -> (@seed() for i in [1..@config.n_genes])
 
         ## Clone a genome gene for gene
         clone: (genes) -> genes[..]
@@ -248,18 +251,18 @@
 
         ## Run function to run 
         run: (stop_fn)->
+            @constructor(@config)
 
             if typeof stop_fn is 'number'
 
                 ## Default function is generation count
                 @config.on_stop = ->
-                    @generation < stop_fn
+                    @generation > stop_fn
 
             else if typeof stop_fn is 'function'
                 @config.on_stop = stop_fn
 
-            while not @trigger 'stop'
-                @trigger 'run'
+            @trigger 'run' while not @trigger 'stop'
 
             @trigger 'finish'
 
@@ -301,32 +304,36 @@
             top_pool = @breedpool.reverse()[0..@config.ratios.top * @config.size]
 
             ## Amount remaining to breed
-            size = @config.size# - top_pool.length
+            size = @config.size # - top_pool.length
             size = 0 if size < 1
 
             ## Add top entries from breed pool
             for a in top_pool
                 @pool.push @clone(a.genes)
 
-            ## add mutated entries
-            for i in [1..@config.ratios.mutate*size]
-                @pool.push @mutate(evo.util.sample(top_pool).genes)
+            if @config.ratios.mutate
+                ## add mutated entries
+                for i in [1..@config.ratios.mutate*size]
+                    @pool.push @mutate(evo.util.sample(top_pool).genes)
 
-            ## Add Crossed entries
-            for i in [1..@config.ratios.cross*size]
-                g1 = evo.util.sample(top_pool).genes
-                g2 = evo.util.sample(top_pool).genes
-                @pool.push @cross(g1, g2)
+            if @config.ratios.cross
+                ## Add Crossed entries
+                for i in [1..@config.ratios.cross*size]
+                    g1 = evo.util.sample(top_pool).genes
+                    g2 = evo.util.sample(top_pool).genes
+                    @pool.push @cross(g1, g2)
 
-            ## Add Melded entries
-            for i in [1..@config.ratios.meld*size]
-                g1 = evo.util.sample(top_pool).genes
-                g2 = evo.util.sample(top_pool).genes
-                @pool.push @meld(g1, g2)
+            if @config.ratios.meld
+                ## Add Melded entries
+                for i in [1..@config.ratios.meld*size]
+                    g1 = evo.util.sample(top_pool).genes
+                    g2 = evo.util.sample(top_pool).genes
+                    @pool.push @meld(g1, g2)
 
-            ## Add random survivors
-            for i in [1..@config.ratios.random*size]
-                @pool.push @clone(evo.util.sample(@breedpool).genes)
+            if @config.ratios.random
+                ## Add random survivors
+                for i in [1..@config.ratios.random*size]
+                    @pool.push @clone(evo.util.sample(@breedpool).genes)
 
             ## Fill the rest with fresh genetics
             while @pool.length < size
@@ -337,7 +344,7 @@
 
             ## Save a static copy of the pool for reference
             ## Round all Genes to two places
-            @prev_pool = @pool.map (g)->(g.map (d)->Math.round(d*100)/100)
+            @prev_pool = @pool[..]
 
             ## Shuffle the pool to get fresh matches
             @pool = evo.util.shuffle @pool            
@@ -348,6 +355,9 @@
             ## Clear the breed pool for the next generation
             @breedpool = []
 
+        best: (number)->
+            return @prev_pool[0] if not number?
+            return @prev_pool[0..number]
 
         load: (genes)->
 

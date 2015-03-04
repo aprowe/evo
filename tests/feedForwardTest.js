@@ -20,3 +20,4 @@ p[2] = net.calc([ 1,  1]) > 0 ? 1 : 0;
 p[3] = net.calc([ 1,  0]) > 0 ? 1 : 0;
 
 console.log(p);
+
