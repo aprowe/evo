@@ -21,19 +21,21 @@
     evo.config = {
       pool: {
         n_genes: 200,
-        cross_rate: 0.04,
-        mutate_rate: 0.04,
-        mutate_amount: 0.10,
+        cross_rate: 0.05,
+        mutate_rate: 0.05,
+        mutate_amount: 1.0,
         size: 100,
         ratios: {
-          top: 0.20,
-          mutate: 0.20,
-          cross: 0.30,
-          random: 0.05,
-          meld: 0.20
+          top: 0.25,
+          mutate: 0.25,
+          cross: 0.25,
+          random: 0.10,
+          meld: 0.00
         },
         on_breed: function() {},
-        on_spawn: void 0
+        on_spawn: void 0,
+        on_run: function() {},
+        on_finish: function() {}
       },
       network: {
         hidden_layers: 2,
@@ -154,6 +156,10 @@
       return Base;
 
     })();
+    evo.pool = function(config) {
+      config = evo.util.extend(evo.config.pool, config);
+      return new Pool(config);
+    };
     Pool = (function(superClass) {
       extend(Pool, superClass);
 
@@ -246,6 +252,20 @@
         return this.last = this.pool.pop();
       };
 
+      Pool.prototype.run = function(stop_fn) {
+        if (typeof stop_fn === 'number') {
+          this.config.on_stop = function() {
+            return this.generation < stop_fn;
+          };
+        } else if (typeof stop_fn === 'function') {
+          this.config.on_stop = stop_fn;
+        }
+        while (!this.trigger('stop')) {
+          this.trigger('run');
+        }
+        return this.trigger('finish');
+      };
+
       Pool.prototype.report = function(genes, score) {
         if (score == null) {
           score = 0;
@@ -327,12 +347,9 @@
       return Pool;
 
     })(Base);
-    evo.pool = function(config) {
-      config = evo.util.extend(evo.config.pool, config);
-      return new Pool(config);
-    };
     Network = (function() {
-      function Network(genes, config1) {
+      function Network(weights, config1) {
+        this.weights = weights;
         this.config = config1;
       }
 
@@ -341,12 +358,12 @@
       return Network;
 
     })();
-    evo.network = function(type, weights, config) {
+    evo.network = function(type, genes, config) {
       config = evo.util.extend(evo.config.network, config);
       if (type === 'feedforward') {
-        return new FeedForward(weights, config);
+        return new FeedForward(genes, config);
       } else if (type === 'cppn') {
-        return new Cppn(weights, config);
+        return new Cppn(genes, config);
       }
     };
     Cppn = (function(superClass) {
@@ -429,10 +446,10 @@
 
       FeedForward.prototype.calc = function(input) {
         var copy, h, hidden_weights, i, j, l, len, len1, len2, len3, len4, n, o, output_weights, p, q, r, ref1, ref2, s, t;
-        if (input.length !== this.config.input) {
-          throw Error("Inputs dont match. Expected: " + this.config.input + ", Received: " + input.length);
+        if (input.length !== this.config.input_nodes) {
+          throw Error("Inputs dont match. Expected: " + this.config.input_nodes + ", Received: " + input.length);
         }
-        copy = this.weights.slice(0);
+        copy = this.weights.slice(0).reverse();
         hidden_weights = [];
         for (j = l = 0, ref1 = this.config.hidden_nodes - 1; 0 <= ref1 ? l <= ref1 : l >= ref1; j = 0 <= ref1 ? ++l : --l) {
           hidden_weights[j] = 0;
@@ -460,6 +477,9 @@
         for (i = t = 0, len4 = output_weights.length; t < len4; i = ++t) {
           o = output_weights[i];
           output_weights[i] = evo.util.flatten(output_weights[i]);
+        }
+        if (output_weights.length === 1) {
+          return output_weights[0];
         }
         return output_weights;
       };

@@ -3,11 +3,11 @@
 class FeedForward extends Network
 
     calc: (input)->
-        if input.length != @config.input
-            throw Error("Inputs dont match. Expected: #{@config.input}, Received: #{input.length}")
+        if input.length != @config.input_nodes
+            throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
         # input.push 0 while input.length < @config.input
 
-        copy = @weights[..]
+        copy = @weights[..].reverse()
         hidden_weights = []
         hidden_weights[j] = 0 for j in [0..@config.hidden_nodes-1]
 
@@ -33,4 +33,7 @@ class FeedForward extends Network
         for o, i in output_weights
             output_weights[i] = evo.util.flatten output_weights[i]
 
+        return output_weights[0] if output_weights.length == 1
+
         return output_weights
+

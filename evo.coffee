@@ -29,13 +29,13 @@
             n_genes: 200
 
             ## The frequency of "twists" in two parents genes
-            cross_rate: 0.04
+            cross_rate: 0.05
 
             ## The frequency of mutations in a parent gene
-            mutate_rate: 0.04
+            mutate_rate: 0.05
 
             ## The amount a mutatated gene can deviate from its original value
-            mutate_amount: 0.10
+            mutate_amount: 1.0
 
             ## The initial pool size
             size: 100
@@ -44,22 +44,27 @@
             ratios:
 
                 ## The "surviving" percentage from the last generation
-                top:    0.20
+                top:    0.25
 
                 ## The mutating percentage
-                mutate: 0.20
+                mutate: 0.25
 
                 ## The percentage created from crossing parents
-                cross:  0.30
+                cross:  0.25
 
                 ## The percentage random survivors
-                random: 0.05
+                random: 0.10
 
                 ## The percentage made from melding two parent
-                meld:   0.20
+                meld:   0.00
 
             on_breed: ->
+                
             on_spawn: undefined
+
+            on_run: ->
+
+            on_finish: ->
 
         network: 
             hidden_layers: 2
@@ -143,6 +148,10 @@
 
     ## Pool Class
 
+    evo.pool = (config)->
+        config = evo.util.extend evo.config.pool, config
+        return new Pool(config)
+
     class Pool extends Base
         constructor: (@config)->
 
@@ -209,13 +218,23 @@
 
             return new_genes
 
+        ## Cosntruct a Spawn object
         spawn: ->
+            ## Get the genes
             genes = @next()
+
+            ## Start with a user specified object
             spec = @trigger 'spawn', genes
+
+            ## Add the genes object
             spec.genes = genes
+
+            ## Initialize score
             spec.score = 0
-            spec.report = => 
-                @report spec
+
+            ## Give it a pool report function
+            spec.report = => @report spec
+
             return spec
 
         next: ->
@@ -226,6 +245,24 @@
                     return @last = @fresh()
 
             @last = @pool.pop()
+
+        ## Run function to run 
+        run: (stop_fn)->
+
+            if typeof stop_fn is 'number'
+
+                ## Default function is generation count
+                @config.on_stop = ->
+                    @generation < stop_fn
+
+            else if typeof stop_fn is 'function'
+                @config.on_stop = stop_fn
+
+            while not @trigger 'stop'
+                @trigger 'run'
+
+            @trigger 'finish'
+
 
         report: (genes, score=0)->
 
@@ -320,24 +357,21 @@
             ## Clear the Breed pool
             @breedpool = []
 
-    evo.pool = (config)->
-        config = evo.util.extend evo.config.pool, config
-        return new Pool(config)
 
     ## Network Class
 
     class Network
-        constructor: (genes, @config)->
+        constructor: (@weights, @config)->
         calc: (input)->
 
     ## Factory Function
-    evo.network = (type, weights, config)->
+    evo.network = (type, genes, config)->
         config = evo.util.extend evo.config.network, config
 
         if type is 'feedforward'
-            return new FeedForward(weights, config)
+            return new FeedForward(genes, config)
         else if type is 'cppn'
-            return new Cppn(weights, config)
+            return new Cppn(genes, config)
            
     ## Compositional Pattern Producing Network
 
@@ -411,11 +445,11 @@
     class FeedForward extends Network
 
         calc: (input)->
-            if input.length != @config.input
-                throw Error("Inputs dont match. Expected: #{@config.input}, Received: #{input.length}")
+            if input.length != @config.input_nodes
+                throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
             # input.push 0 while input.length < @config.input
 
-            copy = @weights[..]
+            copy = @weights[..].reverse()
             hidden_weights = []
             hidden_weights[j] = 0 for j in [0..@config.hidden_nodes-1]
 
@@ -441,7 +475,10 @@
             for o, i in output_weights
                 output_weights[i] = evo.util.flatten output_weights[i]
 
+            return output_weights[0] if output_weights.length == 1
+
             return output_weights
+
 
 
     return evo 

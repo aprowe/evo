@@ -1,5 +1,9 @@
 ## Pool Class
 
+evo.pool = (config)->
+    config = evo.util.extend evo.config.pool, config
+    return new Pool(config)
+
 class Pool extends Base
     constructor: (@config)->
 
@@ -66,13 +70,23 @@ class Pool extends Base
 
         return new_genes
 
+    ## Cosntruct a Spawn object
     spawn: ->
+        ## Get the genes
         genes = @next()
+
+        ## Start with a user specified object
         spec = @trigger 'spawn', genes
+
+        ## Add the genes object
         spec.genes = genes
+
+        ## Initialize score
         spec.score = 0
-        spec.report = => 
-            @report spec
+
+        ## Give it a pool report function
+        spec.report = => @report spec
+
         return spec
 
     next: ->
@@ -83,6 +97,24 @@ class Pool extends Base
                 return @last = @fresh()
 
         @last = @pool.pop()
+
+    ## Run function to run 
+    run: (stop_fn)->
+
+        if typeof stop_fn is 'number'
+
+            ## Default function is generation count
+            @config.on_stop = ->
+                @generation < stop_fn
+
+        else if typeof stop_fn is 'function'
+            @config.on_stop = stop_fn
+
+        while not @trigger 'stop'
+            @trigger 'run'
+
+        @trigger 'finish'
+
 
     report: (genes, score=0)->
 
@@ -177,6 +209,3 @@ class Pool extends Base
         ## Clear the Breed pool
         @breedpool = []
 
-evo.pool = (config)->
-    config = evo.util.extend evo.config.pool, config
-    return new Pool(config)

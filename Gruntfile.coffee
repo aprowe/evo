@@ -7,7 +7,7 @@ module.exports = (grunt) ->
     grunt.initConfig
         watch:
             concat:
-                tasks: ['concat']
+                tasks: ['concat', 'coffee']
                 files: ['src/*.coffee']
 
 
