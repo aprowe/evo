@@ -19,7 +19,6 @@ class FeedForward extends Network
             for h, j in hidden_weights
                 hidden_weights[j] += i * copy.pop()
 
-
         for h, i in hidden_weights
             ## Threshold
             hidden_weights[i] += copy.pop()

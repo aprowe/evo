@@ -1,8 +1,4 @@
 module.exports = (grunt) ->
-    grunt.loadNpmTasks('grunt-contrib-coffee');
-    grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.initConfig
         watch:
@@ -12,7 +8,7 @@ module.exports = (grunt) ->
 
 
         concat:
-            dist:
+            default:
                 options:
                     process: (src, filepath) ->
                         if filepath != 'src/head.coffee' && filepath != 'src/tail.coffee'
@@ -36,14 +32,32 @@ module.exports = (grunt) ->
                 dest: 'evo.coffee'
 
         coffee:
-            compile:
-                files:
-                    'evo.js': 'evo.coffee'
+            test:
+                compile:
+                    files:
+                        'specs/spec.js': 'specs/*.coffee'
+            build:
+                compile:
+                    files:
+                        'evo.js': 'evo.coffee'
 
         uglify:
-            evo:
-                files:
-                    'evo.min.js': 'evo.js'
+            files:
+                'evo.min.js': 'evo.js'
+
+        jasmine:
+            src: 'evo.js'
+            options: 
+                specs: 'specs/*.js'
+                
+
+    grunt.loadNpmTasks('grunt-contrib-coffee')
+    grunt.loadNpmTasks('grunt-contrib-concat')
+    grunt.loadNpmTasks('grunt-contrib-uglify')
+    grunt.loadNpmTasks('grunt-contrib-watch')
+    grunt.loadNpmTasks('grunt-contrib-jasmine')
 
 
-    grunt.registerTask 'default', ['concat', 'coffee', 'uglify']
+    grunt.registerTask 'test', ['coffee:test', 'jasmine']
+    grunt.registerTask 'compile', ['concat', 'coffee:build', 'uglify']
+    grunt.registerTask 'default', ['compile', 'test']

@@ -26,9 +26,12 @@ evo.util =
             x2 = Math.exp -x
             return (x1-x2)/(x1+x2)
 
+    ## Pick a random element of an array
     sample: (array)->
         array[Math.floor(Math.random() * array.length)]
 
+    ## Shuffle an array
+    # Idea taken from underscore
     shuffle: (array)->
         length = array.length
         shuffled = Array length
@@ -39,6 +42,7 @@ evo.util =
 
         return shuffled
 
+    ## clone an object
     clone: (obj)->
         return obj if null == obj or "object" != typeof obj
         copy = obj.constructor()
@@ -47,6 +51,7 @@ evo.util =
 
         return copy
 
+    ## Deep extend of an object
     extend: (destination, source)->
         destination = evo.util.clone(destination)
         return destination unless source?
@@ -54,7 +59,7 @@ evo.util =
         for property of source
             if source[property] and source[property].constructor and source[property].constructor == Object
                 destination[property] = destination[property] or {}
-                arguments.callee(destination[property], source[property])
+                destination[property] = arguments.callee(destination[property], source[property])
             else
                 destination[property] = source[property]
 

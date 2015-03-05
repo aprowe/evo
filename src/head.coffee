@@ -4,7 +4,9 @@
 # Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
 
-((root, factory)-> 
+root = if window? then window else this
+
+((factory)-> 
 
     # Node
     if typeof exports == 'object'
@@ -18,6 +20,6 @@
     else 
         root.evo = factory.call root
 
-)(window? ? window : this, ->
+)(->
 
     evo = {}

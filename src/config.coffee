@@ -48,3 +48,6 @@ evo.config =
         hidden_nodes: 4
         output_nodes: 3
         input_nodes: 2
+
+evo.configure = (config)->
+    evo.config = evo.util.extend evo.config, config

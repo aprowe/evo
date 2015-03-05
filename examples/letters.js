@@ -9,7 +9,7 @@ var pool = evo.pool({
 		top:    0.25,
 		cross:  0.20,
 		mutate: 0.40,
-		meld: 0.1,
+		meld:   0.1,
 		fresh:  0.05
 	}
 
@@ -49,6 +49,6 @@ pool.on('run', 	function(){
 // Run 300 generations
 pool.run(10);
 
-console.log('Took ' + this.generation + " generations to reach a score of " + this.average);
+console.log('Took ' + pool.generation + " generations to reach a score of " + pool.average);
 console.log(pool.best())
 

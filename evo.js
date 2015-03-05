@@ -1,9 +1,11 @@
 (function() {
-  var ref,
+  var root,
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  (function(root, factory) {
+  root = typeof window !== "undefined" && window !== null ? window : this;
+
+  (function(factory) {
     if (typeof exports === 'object') {
       return module.exports = factory.call(root);
     } else if (typeof define === 'function' && define.amd) {
@@ -13,9 +15,7 @@
     } else {
       return root.evo = factory.call(root);
     }
-  })((ref = typeof window !== "undefined" && window !== null) != null ? ref : {
-    window: this
-  }, function() {
+  })(function() {
     var Base, Cppn, FeedForward, Network, Pool, evo;
     evo = {};
     evo.config = {
@@ -43,6 +43,9 @@
         output_nodes: 3,
         input_nodes: 2
       }
+    };
+    evo.configure = function(config) {
+      return evo.config = evo.util.extend(evo.config, config);
     };
     evo.util = {
       random: function(min, max) {
@@ -92,10 +95,10 @@
         return array[Math.floor(Math.random() * array.length)];
       },
       shuffle: function(array) {
-        var index, l, length, rand, ref1, shuffled;
+        var index, l, length, rand, ref, shuffled;
         length = array.length;
         shuffled = Array(length);
-        for (index = l = 0, ref1 = length - 1; 0 <= ref1 ? l <= ref1 : l >= ref1; index = 0 <= ref1 ? ++l : --l) {
+        for (index = l = 0, ref = length - 1; 0 <= ref ? l <= ref : l >= ref; index = 0 <= ref ? ++l : --l) {
           rand = Math.floor(Math.random() * index);
           if (rand !== index) {
             shuffled[index] = shuffled[rand];
@@ -126,7 +129,7 @@
         for (property in source) {
           if (source[property] && source[property].constructor && source[property].constructor === Object) {
             destination[property] = destination[property] || {};
-            arguments.callee(destination[property], source[property]);
+            destination[property] = arguments.callee(destination[property], source[property]);
           } else {
             destination[property] = source[property];
           }
@@ -164,13 +167,13 @@
       extend(Pool, superClass);
 
       function Pool(config1) {
-        var i, l, ref1;
+        var i, l, ref;
         this.config = config1;
         this.generation = 0;
         this.pool = [];
         this.breedpool = [];
         this.last_genes = {};
-        for (i = l = 1, ref1 = this.config.size; 1 <= ref1 ? l <= ref1 : l >= ref1; i = 1 <= ref1 ? ++l : --l) {
+        for (i = l = 1, ref = this.config.size; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
           this.pool.push(this.fresh());
         }
         this.prev_pool = this.pool.slice(0);
@@ -182,9 +185,9 @@
       };
 
       Pool.prototype.fresh = function() {
-        var i, l, ref1, results;
+        var i, l, ref, results;
         results = [];
-        for (i = l = 1, ref1 = this.config.n_genes; 1 <= ref1 ? l <= ref1 : l >= ref1; i = 1 <= ref1 ? ++l : --l) {
+        for (i = l = 1, ref = this.config.n_genes; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
           results.push(this.seed());
         }
         return results;
@@ -299,7 +302,7 @@
       };
 
       Pool.prototype.generate = function() {
-        var a, g1, g2, i, l, len, n, p, q, r, ref1, ref2, ref3, ref4, size, top_pool;
+        var a, g1, g2, i, l, len, n, p, q, r, ref, ref1, ref2, ref3, size, top_pool;
         this.pool = [];
         this.average = this.mean(this.breedpool);
         this.breedpool = this.breedpool.sort(function(a, b) {
@@ -315,26 +318,26 @@
           this.pool.push(this.clone(a.genes));
         }
         if (this.config.ratios.mutate) {
-          for (i = n = 1, ref1 = this.config.ratios.mutate * size; 1 <= ref1 ? n <= ref1 : n >= ref1; i = 1 <= ref1 ? ++n : --n) {
+          for (i = n = 1, ref = this.config.ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
             this.pool.push(this.mutate(evo.util.sample(top_pool).genes));
           }
         }
         if (this.config.ratios.cross) {
-          for (i = p = 1, ref2 = this.config.ratios.cross * size; 1 <= ref2 ? p <= ref2 : p >= ref2; i = 1 <= ref2 ? ++p : --p) {
+          for (i = p = 1, ref1 = this.config.ratios.cross * size; 1 <= ref1 ? p <= ref1 : p >= ref1; i = 1 <= ref1 ? ++p : --p) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.cross(g1, g2));
           }
         }
         if (this.config.ratios.meld) {
-          for (i = q = 1, ref3 = this.config.ratios.meld * size; 1 <= ref3 ? q <= ref3 : q >= ref3; i = 1 <= ref3 ? ++q : --q) {
+          for (i = q = 1, ref2 = this.config.ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.meld(g1, g2));
           }
         }
         if (this.config.ratios.random) {
-          for (i = r = 1, ref4 = this.config.ratios.random * size; 1 <= ref4 ? r <= ref4 : r >= ref4; i = 1 <= ref4 ? ++r : --r) {
+          for (i = r = 1, ref3 = this.config.ratios.random * size; 1 <= ref3 ? r <= ref3 : r >= ref3; i = 1 <= ref3 ? ++r : --r) {
             this.pool.push(this.clone(evo.util.sample(this.breedpool).genes));
           }
         }
@@ -398,13 +401,13 @@
       };
 
       function Cppn(genes, config1) {
-        var copy, i, j, l, n, ref1, ref2;
+        var copy, i, j, l, n, ref, ref1;
         this.config = config1;
         this.node_fn = [];
         copy = genes.slice(0);
-        for (i = l = 0, ref1 = this.config.hidden_layers - 1; 0 <= ref1 ? l <= ref1 : l >= ref1; i = 0 <= ref1 ? ++l : --l) {
+        for (i = l = 0, ref = this.config.hidden_layers - 1; 0 <= ref ? l <= ref : l >= ref; i = 0 <= ref ? ++l : --l) {
           this.node_fn[i] = [];
-          for (j = n = 0, ref2 = this.config.hidden_nodes - 1; 0 <= ref2 ? n <= ref2 : n >= ref2; j = 0 <= ref2 ? ++n : --n) {
+          for (j = n = 0, ref1 = this.config.hidden_nodes - 1; 0 <= ref1 ? n <= ref1 : n >= ref1; j = 0 <= ref1 ? ++n : --n) {
             this.node_fn[i].push(this.get_fn(copy.pop()));
           }
         }
@@ -412,37 +415,37 @@
       }
 
       Cppn.prototype.calc = function(input) {
-        var copy, hidden_weights, i, j, k, l, layer_size, len, n, output, p, q, r, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, s, t, u, v, x;
+        var copy, hidden_weights, i, j, k, l, layer_size, len, n, output, p, q, r, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, s, t, u, v, x;
         layer_size = this.config.hidden_nodes;
         copy = this.weights.slice(0);
         hidden_weights = [];
-        for (k = l = 0, ref1 = this.config.hidden_layers - 1; 0 <= ref1 ? l <= ref1 : l >= ref1; k = 0 <= ref1 ? ++l : --l) {
+        for (k = l = 0, ref = this.config.hidden_layers - 1; 0 <= ref ? l <= ref : l >= ref; k = 0 <= ref ? ++l : --l) {
           hidden_weights[k] = [];
-          for (i = n = 0, ref2 = this.config.hidden_nodes - 1; 0 <= ref2 ? n <= ref2 : n >= ref2; i = 0 <= ref2 ? ++n : --n) {
+          for (i = n = 0, ref1 = this.config.hidden_nodes - 1; 0 <= ref1 ? n <= ref1 : n >= ref1; i = 0 <= ref1 ? ++n : --n) {
             hidden_weights[k][i] = 0;
           }
         }
         for (p = 0, len = input.length; p < len; p++) {
           x = input[p];
-          for (i = q = 0, ref3 = this.config.hidden_nodes - 1; 0 <= ref3 ? q <= ref3 : q >= ref3; i = 0 <= ref3 ? ++q : --q) {
+          for (i = q = 0, ref2 = this.config.hidden_nodes - 1; 0 <= ref2 ? q <= ref2 : q >= ref2; i = 0 <= ref2 ? ++q : --q) {
             hidden_weights[0][i] += x * copy.pop();
           }
         }
-        for (k = r = 0, ref4 = this.config.hidden_layers - 2; 0 <= ref4 ? r <= ref4 : r >= ref4; k = 0 <= ref4 ? ++r : --r) {
-          for (i = s = 0, ref5 = this.config.hidden_nodes - 1; 0 <= ref5 ? s <= ref5 : s >= ref5; i = 0 <= ref5 ? ++s : --s) {
+        for (k = r = 0, ref3 = this.config.hidden_layers - 2; 0 <= ref3 ? r <= ref3 : r >= ref3; k = 0 <= ref3 ? ++r : --r) {
+          for (i = s = 0, ref4 = this.config.hidden_nodes - 1; 0 <= ref4 ? s <= ref4 : s >= ref4; i = 0 <= ref4 ? ++s : --s) {
             hidden_weights[k][i] = this.node_fn[k][i](hidden_weights[k][i], copy.pop(), copy.pop());
             if (!(k + 1 < this.config.hidden_layers)) {
               continue;
             }
-            for (j = t = 0, ref6 = this.config.hidden_nodes - 1; 0 <= ref6 ? t <= ref6 : t >= ref6; j = 0 <= ref6 ? ++t : --t) {
+            for (j = t = 0, ref5 = this.config.hidden_nodes - 1; 0 <= ref5 ? t <= ref5 : t >= ref5; j = 0 <= ref5 ? ++t : --t) {
               hidden_weights[k + 1][j] += hidden_weights[k][i] * copy.pop();
             }
           }
         }
         output = [];
-        for (j = u = 0, ref7 = this.config.output_nodes - 1; 0 <= ref7 ? u <= ref7 : u >= ref7; j = 0 <= ref7 ? ++u : --u) {
+        for (j = u = 0, ref6 = this.config.output_nodes - 1; 0 <= ref6 ? u <= ref6 : u >= ref6; j = 0 <= ref6 ? ++u : --u) {
           output[j] = 0;
-          for (i = v = 0, ref8 = this.config.hidden_nodes - 1; 0 <= ref8 ? v <= ref8 : v >= ref8; i = 0 <= ref8 ? ++v : --v) {
+          for (i = v = 0, ref7 = this.config.hidden_nodes - 1; 0 <= ref7 ? v <= ref7 : v >= ref7; i = 0 <= ref7 ? ++v : --v) {
             output[j] += hidden_weights[this.config.hidden_layers - 1][i] * copy.pop();
           }
           output[j] = evo.util.tanh(output[j]);
@@ -461,17 +464,17 @@
       }
 
       FeedForward.prototype.calc = function(input) {
-        var copy, h, hidden_weights, i, j, l, len, len1, len2, len3, len4, n, o, output_weights, p, q, r, ref1, ref2, s, t;
+        var copy, h, hidden_weights, i, j, l, len, len1, len2, len3, len4, n, o, output_weights, p, q, r, ref, ref1, s, t;
         if (input.length !== this.config.input_nodes) {
           throw Error("Inputs dont match. Expected: " + this.config.input_nodes + ", Received: " + input.length);
         }
         copy = this.weights.slice(0).reverse();
         hidden_weights = [];
-        for (j = l = 0, ref1 = this.config.hidden_nodes - 1; 0 <= ref1 ? l <= ref1 : l >= ref1; j = 0 <= ref1 ? ++l : --l) {
+        for (j = l = 0, ref = this.config.hidden_nodes - 1; 0 <= ref ? l <= ref : l >= ref; j = 0 <= ref ? ++l : --l) {
           hidden_weights[j] = 0;
         }
         output_weights = [];
-        for (j = n = 0, ref2 = this.config.output_nodes - 1; 0 <= ref2 ? n <= ref2 : n >= ref2; j = 0 <= ref2 ? ++n : --n) {
+        for (j = n = 0, ref1 = this.config.output_nodes - 1; 0 <= ref1 ? n <= ref1 : n >= ref1; j = 0 <= ref1 ? ++n : --n) {
           output_weights[j] = 0;
         }
         for (p = 0, len = input.length; p < len; p++) {

@@ -4,7 +4,9 @@
 # Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
 
-((root, factory)-> 
+root = if window? then window else this
+
+((factory)-> 
 
     # Node
     if typeof exports == 'object'
@@ -18,7 +20,7 @@
     else 
         root.evo = factory.call root
 
-)(window? ? window : this, ->
+)(->
 
     evo = {}
     ## Default Configuration Object
@@ -72,6 +74,9 @@
             output_nodes: 3
             input_nodes: 2
 
+    evo.configure = (config)->
+        evo.config = evo.util.extend evo.config, config
+
     ## Utility Functions
     evo.util =
         
@@ -100,9 +105,12 @@
                 x2 = Math.exp -x
                 return (x1-x2)/(x1+x2)
 
+        ## Pick a random element of an array
         sample: (array)->
             array[Math.floor(Math.random() * array.length)]
 
+        ## Shuffle an array
+        # Idea taken from underscore
         shuffle: (array)->
             length = array.length
             shuffled = Array length
@@ -113,6 +121,7 @@
 
             return shuffled
 
+        ## clone an object
         clone: (obj)->
             return obj if null == obj or "object" != typeof obj
             copy = obj.constructor()
@@ -121,6 +130,7 @@
 
             return copy
 
+        ## Deep extend of an object
         extend: (destination, source)->
             destination = evo.util.clone(destination)
             return destination unless source?
@@ -128,7 +138,7 @@
             for property of source
                 if source[property] and source[property].constructor and source[property].constructor == Object
                     destination[property] = destination[property] or {}
-                    arguments.callee(destination[property], source[property])
+                    destination[property] = arguments.callee(destination[property], source[property])
                 else
                     destination[property] = source[property]
 
@@ -470,7 +480,6 @@
             for i in input
                 for h, j in hidden_weights
                     hidden_weights[j] += i * copy.pop()
-
 
             for h, i in hidden_weights
                 ## Threshold
