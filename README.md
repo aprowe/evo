@@ -1,13 +1,13 @@
-  evoJS
+  evo
 =========
 
-evoJS is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
+evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
 Wrapped in the library are simple ANN (Artificial Neural Network) and CPPN (Compositional Pattern Producing Network) 
 classes that work easily with the genetic algorithm. 
 
 Installation
 -------------
-evoJS is compatible with both require.js and node.
+evo is compatible with both require.js and node.
 
 
 Usage
@@ -76,4 +76,4 @@ Now, we can do this:
    
 More to Come
 ----------
-evoJS is a just baby!
+evo is a just baby!
