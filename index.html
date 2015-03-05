@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Evojs by aprowe</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Evojs</h1>
+        <p>Evolutionary Algorithms with ANN</p>
+
+        <p class="view"><a href="https://github.com/aprowe/evojs">View the Project on GitHub <small>aprowe/evojs</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/aprowe/evojs/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/aprowe/evojs/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/aprowe/evojs">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="--evojs" class="anchor" href="#--evojs" aria-hidden="true"><span class="octicon octicon-link"></span></a>  evoJS</h1>
+
+<p>evoJS is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.<br>
+Wrapped in the library are simple ANN (Artificial Neural Network) and CPPN (Compositional Pattern Producing Network) 
+classes that work easily with the genetic algorithm. </p>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<p>evoJS is compatible with both require.js and node.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Getting started is easy:</p>
+
+<div class="highlight highlight-javascript"><pre>    <span class="pl-c">// Instantiate a pool object</span>
+    <span class="pl-s">var</span> pool <span class="pl-k">=</span> evo.pool();
+
+    <span class="pl-c">// Get the next set of genes</span>
+    <span class="pl-s">var</span> genes <span class="pl-k">=</span> pool.<span class="pl-sc">next</span>();  
+
+    <span class="pl-c">// Create a feed forward network</span>
+    <span class="pl-s">var</span> net <span class="pl-k">=</span> evo.network(<span class="pl-s1"><span class="pl-pds">'</span>feedforward<span class="pl-pds">'</span></span>, genes) 
+
+    <span class="pl-c">// Evaluate the network</span>
+    <span class="pl-s">var</span> output <span class="pl-k">=</span> net.calc([<span class="pl-c1">0</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>]);
+
+    <span class="pl-c">// Assign a score to the output</span>
+    net.score <span class="pl-k">=</span> output[<span class="pl-c1">0</span>] <span class="pl-k">-</span> output[<span class="pl-c1">1</span>];
+
+    <span class="pl-c">// Report back to the pool</span>
+    pool.report(net);</pre></div>
+
+<p>Gradually, the gene pool will evolve to maxmize the score.
+The magic happens in <code>pool.next</code> and <code>pool.report</code>. <code>pool.next()</code> will retrieve the next set of genes,
+and when the pool is empty, it will breed all of the specimens you have reported back to the pool via <code>pool.report</code>.</p>
+
+<h6>
+<a id="triggers" class="anchor" href="#triggers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Triggers</h6>
+
+<hr>
+
+<p>We can monitor for when a generation is computed with the 'breed' trigger.</p>
+
+<div class="highlight highlight-javascript"><pre>    pool.on(<span class="pl-s1"><span class="pl-pds">'</span>breed<span class="pl-pds">'</span></span>, <span class="pl-st">function</span>(){
+        <span class="pl-en">console</span><span class="pl-s3">.log</span>(<span class="pl-v">this</span>.generation); <span class="pl-c">// Prints the number of generations computed</span>
+    });</pre></div>
+
+<h6>
+<a id="spawn-objects" class="anchor" href="#spawn-objects" aria-hidden="true"><span class="octicon octicon-link"></span></a>Spawn Objects</h6>
+
+<p>For easy creation of objects using the genes, we can use the 'spawn' trigger. This lets you define a function to shortcut the creation of your genetic object.</p>
+
+<div class="highlight highlight-javascript"><pre>    pool.on(<span class="pl-s1"><span class="pl-pds">'</span>spawn<span class="pl-pds">'</span></span>, <span class="pl-st">function</span>(<span class="pl-vpf">genes</span>){
+        <span class="pl-s">var</span> net <span class="pl-k">=</span> evo.network(<span class="pl-s1"><span class="pl-pds">'</span>cppn<span class="pl-pds">'</span></span>, genes);
+        <span class="pl-k">return</span> net;
+    });</pre></div>
+
+<p>The return value of this function will be returned when <code>pool.spawn</code> is called.
+Now, we can do this: </p>
+
+<div class="highlight highlight-javascript"><pre>    <span class="pl-s">var</span> net <span class="pl-k">=</span> pool.spawn();
+
+    <span class="pl-c">// Evaluate the network</span>
+    <span class="pl-s">var</span> output <span class="pl-k">=</span> net.calc([<span class="pl-c1">0</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>]);
+
+    <span class="pl-c">// Assign a score to the output</span>
+    net.score <span class="pl-k">=</span> output[<span class="pl-c1">0</span>] <span class="pl-k">-</span> output[<span class="pl-c1">1</span>];
+
+    <span class="pl-c">// pool reference is now stored in net. </span>
+    net.report();</pre></div>
+
+<h2>
+<a id="more-to-come" class="anchor" href="#more-to-come" aria-hidden="true"><span class="octicon octicon-link"></span></a>More to Come</h2>
+
+<p>evoJS is a just baby!</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/aprowe">aprowe</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
