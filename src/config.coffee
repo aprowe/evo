@@ -17,6 +17,9 @@ evo.config =
         ## The initial pool size
         size: 100
 
+        ## Enable Auto spawn
+        auto_spawn: false
+
         ## Ratios each generation will compromise
         ratios:
 
@@ -34,6 +37,9 @@ evo.config =
 
             ## The percentage made from melding two parent
             meld:   0.00
+
+            ## The percentage of new genomes
+            fresh:  0.15
 
         on_breed: ->
             

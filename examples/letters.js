@@ -32,7 +32,7 @@ pool.mutate = function(genes) {
 
 // Show the average each generation
 pool.on('breed', function(){
-	console.log(this.average);
+	// console.log(this.average);
 });
 
 pool.on('run', 	function(){
@@ -50,5 +50,4 @@ pool.on('run', 	function(){
 pool.run(10);
 
 console.log('Took ' + pool.generation + " generations to reach a score of " + pool.average);
-console.log(pool.best())
 

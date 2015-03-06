@@ -32,14 +32,10 @@ module.exports = (grunt) ->
                 dest: 'evo.coffee'
 
         coffee:
-            test:
-                compile:
-                    files:
-                        'specs/spec.js': 'specs/*.coffee'
-            build:
-                compile:
-                    files:
-                        'evo.js': 'evo.coffee'
+            compile:
+                files:
+                    'specs/spec.js': 'specs/*.coffee'
+                    'evo.js': 'evo.coffee'
 
         uglify:
             files:
@@ -49,15 +45,21 @@ module.exports = (grunt) ->
             src: 'evo.js'
             options: 
                 specs: 'specs/*.js'
-                
+
+        execute:
+            test:
+                src: ['examples/*.js']
+        
+                    
 
     grunt.loadNpmTasks('grunt-contrib-coffee')
     grunt.loadNpmTasks('grunt-contrib-concat')
     grunt.loadNpmTasks('grunt-contrib-uglify')
     grunt.loadNpmTasks('grunt-contrib-watch')
+    grunt.loadNpmTasks('grunt-execute')
     grunt.loadNpmTasks('grunt-contrib-jasmine')
 
 
-    grunt.registerTask 'test', ['coffee:test', 'jasmine']
-    grunt.registerTask 'compile', ['concat', 'coffee:build', 'uglify']
+    grunt.registerTask 'test', ['coffee', 'jasmine', 'execute']
+    grunt.registerTask 'compile', ['concat', 'coffee', 'uglify']
     grunt.registerTask 'default', ['compile', 'test']

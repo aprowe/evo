@@ -5,15 +5,17 @@ var pool = evo.pool({
 	n_genes: 10, // Number of genes of each object
 	size: 400,     // Size of pool
 
-	cross_rate: 0.05,
-	mutate_rate: 0.05,
-	mutate_amount: 1.0,
+	cross_rate: 0.10,
+	mutate_rate: 0.7,
+	mutate_amount: 1.85,
 
 	ratios: {
-		top:    0.25,
-		cross:  0.25,
-		mutate: 0.25,
-		fresh:  0.25
+		top:    1.00,
+		cross:  0.33,
+		mutate: 2.00,
+		fresh:  0.20,
+		meld:   0.75,
+		random: 1.25,
 	}
 
 });
@@ -30,7 +32,7 @@ pool.on ('spawn', function(genes){
 
 // Show the average each generation
 pool.on('breed', function(){
-	console.log(this.average);
+	// console.log(this.average);
 });
 
 pool.on('run', 	function(){
@@ -42,21 +44,16 @@ pool.on('run', 	function(){
 	net.score += net.calc([ 1, -1]) < 0 ? 1 : 0;
 	net.score += net.calc([-1,  1]) < 0 ? 1 : 0;
 
-	net.report()
-});
-
-// pool.run isn't asynchronous, but we can do this anyway
-pool.on('finish', function() {
-	console.log('Took ' + this.generation + " generations to reach a score of " + this.average);
+	this.report(net)
 });
 
 // Run 300 generations
 // pool.run(300);
 
+
 // Run until function returns true
 pool.run(function(){
 	return this.average > 3.50
-})
+});
 
-console.log(pool.pool)
-
+console.log('Took ' + pool.generation + " generations to reach a score of " + pool.average);

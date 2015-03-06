@@ -64,3 +64,17 @@ evo.util =
                 destination[property] = source[property]
 
         return destination
+
+    ## Normalizes the values of an object
+    normalize: (obj)->
+        ## Compute sum
+        sum = 0 
+        sum += value for key, value of obj
+        
+        ratios = {}
+        for key, value of obj
+            value = 0 if not value
+            ratios[key] = value/sum 
+
+        return ratios
+

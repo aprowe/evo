@@ -25,12 +25,14 @@
         mutate_rate: 0.05,
         mutate_amount: 1.0,
         size: 100,
+        auto_spawn: false,
         ratios: {
           top: 0.25,
           mutate: 0.25,
           cross: 0.25,
           random: 0.10,
-          meld: 0.00
+          meld: 0.00,
+          fresh: 0.15
         },
         on_breed: function() {},
         on_spawn: void 0,
@@ -135,6 +137,23 @@
           }
         }
         return destination;
+      },
+      normalize: function(obj) {
+        var key, ratios, sum, value;
+        sum = 0;
+        for (key in obj) {
+          value = obj[key];
+          sum += value;
+        }
+        ratios = {};
+        for (key in obj) {
+          value = obj[key];
+          if (!value) {
+            value = 0;
+          }
+          ratios[key] = value / sum;
+        }
+        return ratios;
       }
     };
     Base = (function() {
@@ -172,7 +191,6 @@
         this.generation = 0;
         this.pool = [];
         this.breedpool = [];
-        this.last_genes = {};
         for (i = l = 1, ref = this.config.size; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
           this.pool.push(this.fresh());
         }
@@ -240,11 +258,6 @@
         spec = this.trigger('spawn', genes);
         spec.genes = genes;
         spec.score = 0;
-        spec.report = (function(_this) {
-          return function() {
-            return _this.report(spec);
-          };
-        })(this);
         return spec;
       };
 
@@ -253,25 +266,10 @@
           if (this.breedpool.length > 0) {
             this.generate();
           } else {
-            return this.last = this.fresh();
+            return this.fresh();
           }
         }
-        return this.last = this.pool.pop();
-      };
-
-      Pool.prototype.run = function(stop_fn) {
-        this.constructor(this.config);
-        if (typeof stop_fn === 'number') {
-          this.config.on_stop = function() {
-            return this.generation > stop_fn;
-          };
-        } else if (typeof stop_fn === 'function') {
-          this.config.on_stop = stop_fn;
-        }
-        while (!this.trigger('stop')) {
-          this.trigger('run');
-        }
-        return this.trigger('finish');
+        return this.pool.pop();
       };
 
       Pool.prototype.report = function(genes, score) {
@@ -282,13 +280,36 @@
           score = genes.score;
           genes = genes.genes;
         }
-        if (genes == null) {
-          genes = this.last_genes;
-        }
         return this.breedpool.push({
           genes: genes,
           score: score
         });
+      };
+
+      Pool.prototype.run = function(stop_fn) {
+        var genes, max, score, spawn;
+        if (typeof stop_fn === 'number') {
+          max = stop_fn + this.generation;
+          this.config.on_stop = function() {
+            return this.generation >= max;
+          };
+        } else if (typeof stop_fn === 'function') {
+          this.config.on_stop = stop_fn;
+        }
+        while (!this.trigger('stop')) {
+          if (this.config.autospawn && (this.config.on_spawn != null)) {
+            spawn = this.spawn();
+            this.trigger('run', spawn);
+            this.report(spawn);
+          } else if (this.config.autospawn) {
+            genes = this.next();
+            score = this.trigger('run', genes);
+            this.report(genes, score);
+          } else {
+            this.trigger('run');
+          }
+        }
+        return this.trigger('finish');
       };
 
       Pool.prototype.mean = function(pool) {
@@ -302,7 +323,8 @@
       };
 
       Pool.prototype.generate = function() {
-        var a, g1, g2, i, l, len, n, p, q, r, ref, ref1, ref2, ref3, size, top_pool;
+        var a, g1, g2, i, l, len, n, p, q, r, ratios, ref, ref1, ref2, ref3, size, top_pool;
+        ratios = evo.util.normalize(this.config.ratios);
         this.pool = [];
         this.average = this.mean(this.breedpool);
         this.breedpool = this.breedpool.sort(function(a, b) {
@@ -317,27 +339,27 @@
           a = top_pool[l];
           this.pool.push(this.clone(a.genes));
         }
-        if (this.config.ratios.mutate) {
-          for (i = n = 1, ref = this.config.ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
+        if (ratios.mutate) {
+          for (i = n = 1, ref = ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
             this.pool.push(this.mutate(evo.util.sample(top_pool).genes));
           }
         }
-        if (this.config.ratios.cross) {
-          for (i = p = 1, ref1 = this.config.ratios.cross * size; 1 <= ref1 ? p <= ref1 : p >= ref1; i = 1 <= ref1 ? ++p : --p) {
+        if (ratios.cross) {
+          for (i = p = 1, ref1 = ratios.cross * size; 1 <= ref1 ? p <= ref1 : p >= ref1; i = 1 <= ref1 ? ++p : --p) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.cross(g1, g2));
           }
         }
-        if (this.config.ratios.meld) {
-          for (i = q = 1, ref2 = this.config.ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
+        if (ratios.meld) {
+          for (i = q = 1, ref2 = ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.meld(g1, g2));
           }
         }
-        if (this.config.ratios.random) {
-          for (i = r = 1, ref3 = this.config.ratios.random * size; 1 <= ref3 ? r <= ref3 : r >= ref3; i = 1 <= ref3 ? ++r : --r) {
+        if (ratios.random) {
+          for (i = r = 1, ref3 = ratios.random * size; 1 <= ref3 ? r <= ref3 : r >= ref3; i = 1 <= ref3 ? ++r : --r) {
             this.pool.push(this.clone(evo.util.sample(this.breedpool).genes));
           }
         }
