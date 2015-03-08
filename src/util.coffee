@@ -7,10 +7,10 @@ evo.util =
     sin: (x, freq=1, phase=0)->
         Math.sin x * freq * 6.2832 + phase
 
-    gaussian: (x,mu,sigma)->
+    gaussian: (x,mu=0,sigma=1)->
         Math.exp -(mu-x)**2 * sigma
 
-    linear: (x, m, b)-> 
+    linear: (x, m=1, b=0)-> 
         (x + b) * m
 
     flatten: (x)->
@@ -25,6 +25,10 @@ evo.util =
             x1 = Math.exp x
             x2 = Math.exp -x
             return (x1-x2)/(x1+x2)
+
+    step: (x)->
+        return -1 if (x < 0)
+        return  1
 
     ## Pick a random element of an array
     sample: (array)->

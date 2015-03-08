@@ -50,10 +50,16 @@ evo.config =
         on_finish: ->
 
     network: 
+        output_fn: 'tanh'
+
+        output_nodes: 2
+
         hidden_layers: 2
-        hidden_nodes: 4
-        output_nodes: 3
+        
+        hidden_nodes: 2
+
         input_nodes: 2
 
+## Configuration function to set defaults
 evo.configure = (config)->
     evo.config = evo.util.extend evo.config, config

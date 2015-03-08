@@ -75,11 +75,17 @@ root = if window? then window else this
             on_finish: ->
 
         network: 
+            output_fn: 'tanh'
+
+            output_nodes: 2
+
             hidden_layers: 2
-            hidden_nodes: 4
-            output_nodes: 3
+            
+            hidden_nodes: 2
+
             input_nodes: 2
 
+    ## Configuration function to set defaults
     evo.configure = (config)->
         evo.config = evo.util.extend evo.config, config
 
@@ -92,10 +98,10 @@ root = if window? then window else this
         sin: (x, freq=1, phase=0)->
             Math.sin x * freq * 6.2832 + phase
 
-        gaussian: (x,mu,sigma)->
+        gaussian: (x,mu=0,sigma=1)->
             Math.exp -(mu-x)**2 * sigma
 
-        linear: (x, m, b)-> 
+        linear: (x, m=1, b=0)-> 
             (x + b) * m
 
         flatten: (x)->
@@ -110,6 +116,10 @@ root = if window? then window else this
                 x1 = Math.exp x
                 x2 = Math.exp -x
                 return (x1-x2)/(x1+x2)
+
+        step: (x)->
+            return -1 if (x < 0)
+            return  1
 
         ## Pick a random element of an array
         sample: (array)->
@@ -505,6 +515,19 @@ root = if window? then window else this
 
     class FeedForward extends Network
 
+        constructor: (@weights, @config) ->
+            if typeof @config.output_fn == 'function'
+                @output_fn = @config.output_fn
+
+            else if @config.output_fn == 'linear'
+                @output_fn = evo.util.linear
+                
+            else if @config.output_fn == 'step'
+                @output_fn = evo.util.step
+
+            else
+                @output_fn = evo.util.tanh
+
         calc: (input)->
             if input.length != @config.input_nodes
                 throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
@@ -533,7 +556,7 @@ root = if window? then window else this
                     output_weights[j] += hidden_weights[i] * copy.pop()
 
             for o, i in output_weights
-                output_weights[i] = evo.util.flatten output_weights[i]
+                output_weights[i] = @output_fn output_weights[i]
 
             return output_weights[0] if output_weights.length == 1
 

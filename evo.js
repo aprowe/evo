@@ -40,9 +40,10 @@
         on_finish: function() {}
       },
       network: {
+        output_fn: 'tanh',
+        output_nodes: 2,
         hidden_layers: 2,
-        hidden_nodes: 4,
-        output_nodes: 3,
+        hidden_nodes: 2,
         input_nodes: 2
       }
     };
@@ -69,9 +70,21 @@
         return Math.sin(x * freq * 6.2832 + phase);
       },
       gaussian: function(x, mu, sigma) {
+        if (mu == null) {
+          mu = 0;
+        }
+        if (sigma == null) {
+          sigma = 1;
+        }
         return Math.exp(-(Math.pow(mu - x, 2)) * sigma);
       },
       linear: function(x, m, b) {
+        if (m == null) {
+          m = 1;
+        }
+        if (b == null) {
+          b = 0;
+        }
         return (x + b) * m;
       },
       flatten: function(x) {
@@ -92,6 +105,12 @@
           x2 = Math.exp(-x);
           return (x1 - x2) / (x1 + x2);
         }
+      },
+      step: function(x) {
+        if (x < 0) {
+          return -1;
+        }
+        return 1;
       },
       sample: function(array) {
         return array[Math.floor(Math.random() * array.length)];
@@ -481,8 +500,18 @@
     FeedForward = (function(superClass) {
       extend(FeedForward, superClass);
 
-      function FeedForward() {
-        return FeedForward.__super__.constructor.apply(this, arguments);
+      function FeedForward(weights, config1) {
+        this.weights = weights;
+        this.config = config1;
+        if (typeof this.config.output_fn === 'function') {
+          this.output_fn = this.config.output_fn;
+        } else if (this.config.output_fn === 'linear') {
+          this.output_fn = evo.util.linear;
+        } else if (this.config.output_fn === 'step') {
+          this.output_fn = evo.util.step;
+        } else {
+          this.output_fn = evo.util.tanh;
+        }
       }
 
       FeedForward.prototype.calc = function(input) {
@@ -517,7 +546,7 @@
         }
         for (i = t = 0, len4 = output_weights.length; t < len4; i = ++t) {
           o = output_weights[i];
-          output_weights[i] = evo.util.flatten(output_weights[i]);
+          output_weights[i] = this.output_fn(output_weights[i]);
         }
         if (output_weights.length === 1) {
           return output_weights[0];

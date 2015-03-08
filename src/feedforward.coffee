@@ -2,6 +2,19 @@
 
 class FeedForward extends Network
 
+    constructor: (@weights, @config) ->
+        if typeof @config.output_fn == 'function'
+            @output_fn = @config.output_fn
+
+        else if @config.output_fn == 'linear'
+            @output_fn = evo.util.linear
+            
+        else if @config.output_fn == 'step'
+            @output_fn = evo.util.step
+
+        else
+            @output_fn = evo.util.tanh
+
     calc: (input)->
         if input.length != @config.input_nodes
             throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
@@ -30,7 +43,7 @@ class FeedForward extends Network
                 output_weights[j] += hidden_weights[i] * copy.pop()
 
         for o, i in output_weights
-            output_weights[i] = evo.util.flatten output_weights[i]
+            output_weights[i] = @output_fn output_weights[i]
 
         return output_weights[0] if output_weights.length == 1
 
