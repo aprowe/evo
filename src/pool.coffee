@@ -25,6 +25,7 @@ class Pool extends Base
         ## Keep track of the current average
         @average = 0
 
+
     ## -------------------------------
     ## Methods for generating genomes
     ## -------------------------------
@@ -78,6 +79,8 @@ class Pool extends Base
         ## Start with a user specified object
         spec = @trigger 'spawn', genes
 
+        throw "Spawn trigger did not return an object" if not spec?
+
         ## Add the genes object
         spec.genes = genes
 
@@ -85,7 +88,7 @@ class Pool extends Base
         spec.score = 0
 
         ## Give it a pool report function
-        # spec.report_to_pool = => @report spec
+        spec.report_to_pool = => @report spec
 
         return spec
 
@@ -135,7 +138,7 @@ class Pool extends Base
             if @config.autospawn and @config.on_spawn?
                 spawn = @spawn()
                 @trigger 'run', spawn
-                @report(spawn)
+                @report spawn
 
             ## If autospawn is on but no spawn function exists, 
             # run the simulation 
@@ -153,8 +156,7 @@ class Pool extends Base
     ## Average the score of a list of genome objects
     mean: (pool)->
         avg = 0
-        for a in pool
-            avg += a.score
+        avg += a.score for a in pool
         avg /= pool.length
 
     ## Calculates the next generation based on the breedpool,
@@ -164,9 +166,10 @@ class Pool extends Base
         ## Normalize them ratios
         ratios = evo.util.normalize(@config.ratios)
 
-        # Ensure the pool is empty
+        ## Ensure the pool is empty
         @pool = []
 
+        ## Store the average
         @average = @mean @breedpool
 
         ## Sort the breedpool by score
@@ -183,26 +186,26 @@ class Pool extends Base
         for a in top_pool
             @pool.push @clone(a.genes)
 
-        if ratios.mutate
+        if ratios.mutate > 0
             ## Add mutated entries
             for i in [1..ratios.mutate*size]
                 @pool.push @mutate(evo.util.sample(top_pool).genes)
 
-        if ratios.cross
+        if ratios.cross > 0
             ## Add Crossed entries
             for i in [1..ratios.cross*size]
                 g1 = evo.util.sample(top_pool).genes
                 g2 = evo.util.sample(top_pool).genes
                 @pool.push @cross(g1, g2)
 
-        if ratios.meld
+        if ratios.meld > 0
             ## Add Melded entries
             for i in [1..ratios.meld*size]
                 g1 = evo.util.sample(top_pool).genes
                 g2 = evo.util.sample(top_pool).genes
                 @pool.push @meld(g1, g2)
 
-        if ratios.random
+        if ratios.random > 0
             ## Add random survivors
             for i in [1..ratios.random*size]
                 @pool.push @clone(evo.util.sample(@breedpool).genes)
@@ -229,7 +232,7 @@ class Pool extends Base
     ## Return the best of the last generation bred
     best: (number)->
         return @prev_pool[0] if not number?
-        return @prev_pool[0..number]
+        return @prev_pool[0..number-1]
 
     ## Load genes into the pool
     load: (genes)->

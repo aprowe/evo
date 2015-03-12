@@ -275,8 +275,16 @@
         var genes, spec;
         genes = this.next();
         spec = this.trigger('spawn', genes);
+        if (spec == null) {
+          throw "Spawn trigger did not return an object";
+        }
         spec.genes = genes;
         spec.score = 0;
+        spec.report_to_pool = (function(_this) {
+          return function() {
+            return _this.report(spec);
+          };
+        })(this);
         return spec;
       };
 
@@ -358,26 +366,26 @@
           a = top_pool[l];
           this.pool.push(this.clone(a.genes));
         }
-        if (ratios.mutate) {
+        if (ratios.mutate > 0) {
           for (i = n = 1, ref = ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
             this.pool.push(this.mutate(evo.util.sample(top_pool).genes));
           }
         }
-        if (ratios.cross) {
+        if (ratios.cross > 0) {
           for (i = p = 1, ref1 = ratios.cross * size; 1 <= ref1 ? p <= ref1 : p >= ref1; i = 1 <= ref1 ? ++p : --p) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.cross(g1, g2));
           }
         }
-        if (ratios.meld) {
+        if (ratios.meld > 0) {
           for (i = q = 1, ref2 = ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
             this.pool.push(this.meld(g1, g2));
           }
         }
-        if (ratios.random) {
+        if (ratios.random > 0) {
           for (i = r = 1, ref3 = ratios.random * size; 1 <= ref3 ? r <= ref3 : r >= ref3; i = 1 <= ref3 ? ++r : --r) {
             this.pool.push(this.clone(evo.util.sample(this.breedpool).genes));
           }
@@ -396,7 +404,7 @@
         if (number == null) {
           return this.prev_pool[0];
         }
-        return this.prev_pool.slice(0, +number + 1 || 9e9);
+        return this.prev_pool.slice(0, +(number - 1) + 1 || 9e9);
       };
 
       Pool.prototype.load = function(genes) {
