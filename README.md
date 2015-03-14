@@ -1,13 +1,13 @@
-  evo
+  Evo
 =========
 
-evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
+Evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
 Wrapped in the library are simple ANN (Artificial Neural Network) and CPPN (Compositional Pattern Producing Network) 
 classes that work easily with the genetic algorithm. 
 
 Installation
 -------------
-evo is compatible with both require.js and node.
+Evo is compatible with both require.js and node.
 
 
 Usage
