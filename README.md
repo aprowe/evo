@@ -28,7 +28,7 @@ Getting started is easy:
     var output = net.calc([0,1,2]);
     
     // Assign a score to the output
-    net.score = output[0] - output[1];
+    net.score = Math.abs(1 - output[0]);
     
     // Report back to the pool
     pool.report(net);
@@ -74,6 +74,7 @@ Now, we can do this:
     net.report();
 ```
    
+
 More to Come
 ----------
 evo is a just baby!
