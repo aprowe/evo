@@ -1,13 +1,13 @@
-  evo
+  Evo
 =========
 
-evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
+Evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
 Wrapped in the library are simple ANN (Artificial Neural Network) and CPPN (Compositional Pattern Producing Network) 
 classes that work easily with the genetic algorithm. 
 
 Installation
 -------------
-evo is compatible with both require.js and node.
+Evo is compatible with both require.js and node.
 
 
 Usage
@@ -28,7 +28,7 @@ Getting started is easy:
     var output = net.calc([0,1,2]);
     
     // Assign a score to the output
-    net.score = output[0] - output[1];
+    net.score = Math.abs(1 - output[0]);
     
     // Report back to the pool
     pool.report(net);
@@ -74,6 +74,7 @@ Now, we can do this:
     net.report();
 ```
    
+
 More to Come
 ----------
 evo is a just baby!
