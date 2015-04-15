@@ -25,7 +25,7 @@
         mutate_rate: 0.05,
         mutate_amount: 1.0,
         size: 100,
-        auto_spawn: false,
+        autospawn: false,
         ratios: {
           top: 0.25,
           mutate: 0.25,
@@ -271,9 +271,14 @@
         return new_genes;
       };
 
-      Pool.prototype.spawn = function() {
-        var genes, spec;
-        genes = this.next();
+      Pool.prototype.spawn = function(genes) {
+        var spec;
+        if (genes == null) {
+          genes = null;
+        }
+        if (genes == null) {
+          genes = this.next();
+        }
         spec = this.trigger('spawn', genes);
         if (spec == null) {
           throw "Spawn trigger did not return an object";

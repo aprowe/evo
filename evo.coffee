@@ -43,7 +43,7 @@ root = if window? then window else this
             size: 100
 
             ## Enable Auto spawn
-            auto_spawn: false
+            autospawn: false
 
             ## Ratios each generation will compromise
             ratios:
@@ -259,10 +259,10 @@ root = if window? then window else this
 
             return new_genes
 
-        ## Cosntruct a Spawn object
-        spawn: ->
+        ## Construct a Spawn object
+        spawn: (genes=null)->
             ## Get the genes
-            genes = @next()
+            genes = @next() unless genes?
 
             ## Start with a user specified object
             spec = @trigger 'spawn', genes

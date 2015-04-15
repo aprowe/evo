@@ -71,10 +71,10 @@ class Pool extends Base
 
         return new_genes
 
-    ## Cosntruct a Spawn object
-    spawn: ->
+    ## Construct a Spawn object
+    spawn: (genes=null)->
         ## Get the genes
-        genes = @next()
+        genes = @next() unless genes?
 
         ## Start with a user specified object
         spec = @trigger 'spawn', genes

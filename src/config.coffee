@@ -18,7 +18,7 @@ evo.config =
         size: 100
 
         ## Enable Auto spawn
-        auto_spawn: false
+        autospawn: false
 
         ## Ratios each generation will compromise
         ratios:
