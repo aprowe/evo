@@ -1,8 +1,9 @@
 ##
 # evo.js v0.1.0
-# A genetic algorithm calculator with ANN
+# Genetic Algorithm Calculator with ANN
 # Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
+##
 
 root = if window? then window else this
 

@@ -1,3 +1,9 @@
+/**
+ * evo.js v0.1.0
+ * Genetic Algorithm Calculator with ANN
+ * Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
+ * Licensed MIT
+ **/
 (function() {
   var root,
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },

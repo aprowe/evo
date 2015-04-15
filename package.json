@@ -1,7 +1,7 @@
 {
   "name": "evo",
   "version": "0.1.0",
-  "description": "Evolutionary Algorithm Calculator",
+  "description": "Genetic Algorithm Calculator with ANN",
   "main": "evo.coffee",
   "scripts": {
     "test": "coffee -c evo.coffee"
