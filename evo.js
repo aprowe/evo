@@ -401,7 +401,7 @@
             this.pool.push(this.clone(evo.util.sample(this.breedpool).genes));
           }
         }
-        while (this.pool.length < size) {
+        while (this.pool.length <= size) {
           this.pool.push(this.fresh());
         }
         this.generation++;

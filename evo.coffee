@@ -400,7 +400,7 @@ root = if window? then window else this
                     @pool.push @clone(evo.util.sample(@breedpool).genes)
 
             ## Fill the rest with fresh genetics
-            @pool.push @fresh() while @pool.length < size
+            @pool.push @fresh() while @pool.length <= size
 
             ## Increment the generation count
             @generation++

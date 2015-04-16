@@ -13,7 +13,6 @@ coffeebanner += '# Licensed MIT\n'
 coffeebanner += '##\n'
 
 module.exports = (grunt) ->
-
     grunt.initConfig
         pkg: grunt.file.readJSON 'package.json'
         watch:
@@ -82,6 +81,6 @@ module.exports = (grunt) ->
     grunt.loadNpmTasks('grunt-execute')
     grunt.loadNpmTasks('grunt-contrib-jasmine')
 
-    grunt.registerTask 'test', ['coffee:test', 'jasmine', 'execute']
+    grunt.registerTask 'test', ['coffee:test', 'jasmine'] #'execute']
     grunt.registerTask 'compile', ['concat:default', 'coffee:default', 'uglify', 'concat:banner']
     grunt.registerTask 'default', ['compile', 'test']
