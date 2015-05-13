@@ -1,4 +1,4 @@
-  Evo
+  evo.js
 =========
 
 Evo is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.  
