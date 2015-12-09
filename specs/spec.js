@@ -49,12 +49,12 @@
     mutate_amount: 1.85,
     autospawn: true,
     ratios: {
-      top: 1.10,
-      cross: 1.10,
-      mutate: 1.10,
-      fresh: 1.10,
-      meld: 1.10,
-      random: 1.10
+      top: 0.1,
+      cross: 0.1,
+      mutate: 0.1,
+      fresh: 0.1,
+      meld: 0.1,
+      random: 0.1
     },
     on_spawn: function(genes) {
       return {};
