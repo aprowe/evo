@@ -28,10 +28,10 @@ Getting started is easy:
     var output = net.calc([0,1,2]);
     
     // Assign a score to the output
-    net.score = Math.abs(1 - output[0]);
+    var score = Math.abs(1 - output[0]);
     
-    // Report back to the pool
-    pool.report(net);
+    // Report genes back to the pool
+    pool.report(genes, score);
 ```
 
 Gradually, the gene pool will evolve to maxmize the score.
