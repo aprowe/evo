@@ -47,7 +47,6 @@
     cross_rate: 0.10,
     mutate_rate: 0.7,
     mutate_amount: 1.85,
-    autospawn: true,
     ratios: {
       top: 0.1,
       cross: 0.1,
@@ -55,27 +54,106 @@
       fresh: 0.1,
       meld: 0.1,
       random: 0.1
-    },
-    on_spawn: function(genes) {
-      return {};
-    },
-    on_run: function(spawn) {
-      return spawn.score = Math.random();
     }
   };
 
-  describe('Pool Basics', function() {
-    it("Creates The right number of organisms", function() {
-      var pool;
-      pool = evo.pool(config);
-      pool.run(1);
-      return expect(pool.pool.length).toBe(size);
+  describe('Given a method to construct a member', function() {
+    var member, pool;
+    pool = evo.pool(config);
+    pool.on('member', function(genes) {
+      return {
+        a: 'a'
+      };
     });
-    return it("Organisms have the right number of genes", function() {
+    member = pool.nextMember();
+    it('will use that method to create a member', function() {
+      return expect(member.a).toEqual('a');
+    });
+    return it('will have an object named _evo within it', function() {
+      expect(member._evo).toBeDefined();
+      expect(member._evo.genes).toBeDefined();
+      expect(member._evo.score).toBeDefined();
+      return expect(member._evo.report).toBeDefined();
+    });
+  });
+
+  describe('Given a method to run a simulation', function() {
+    it('will stop after a certain amount if stopping number is supplied', function() {
+      var numberRun, pool;
+      pool = evo.pool(config);
+      numberRun = 0;
+      pool.on('run', function() {
+        return numberRun++;
+      });
+      pool.run(10);
+      return expect(numberRun).toEqual(10);
+    });
+    return describe('When a member constructor member is NOT supplied', function() {
+      return it('will run it with genes as a supplied parameter', function() {
+        var g, pool;
+        pool = evo.pool(config);
+        g = {};
+        pool.on('run', function(genes) {
+          return g = genes;
+        });
+        pool.run(10);
+        return expect(g.length).toEqual(n_genes);
+      });
+    });
+  });
+
+  describe('When a member constructor member is supplied', function() {
+    return it('runs with a new member as a supplied parameter', function() {
+      var g, pool;
+      pool = evo.pool(config);
+      g = {};
+      pool.on('member', function(genes) {
+        return g = {
+          name: "testName"
+        };
+      });
+      pool.run(10);
+      pool.on('run', function(genes) {
+        return g = genes;
+      });
+      return expect(g.name).toEqual("testName");
+    });
+  });
+
+  describe('When a stop method is provided', function() {
+    return it('stops when the function returns true', function() {
+      var m, pool;
+      pool = evo.pool(config);
+      m = 0;
+      pool.on('run', function() {
+        return m++;
+      });
+      pool.run(function() {
+        return m < 4;
+      });
+      return expect(m).toBe(4);
+    });
+  });
+
+  describe('When calling nextGenes', function() {
+    return it('will return a list of genes', function() {
+      var genes, pool;
+      pool = evo.pool(config);
+      genes = pool.nextGenes();
+      return expect(genes.length).toEqual(n_genes);
+    });
+  });
+
+  describe('Pool Population', function() {
+    it("Creates The right number of genes", function() {
       var pool;
       pool = evo.pool(config);
-      pool.run(1);
-      return expect(pool.pool[0].length).toBe(n_genes);
+      return expect(pool.genes.length).toBe(size);
+    });
+    return it("Gene sets have the right number of genes", function() {
+      var pool;
+      pool = evo.pool(config);
+      return expect(pool.genes[0].length).toBe(n_genes);
     });
   });
 
@@ -90,7 +168,6 @@
     cross_rate: 0.10,
     mutate_rate: 0.7,
     mutate_amount: 1.85,
-    autospawn: false,
     ratios: {
       top: 1.00,
       cross: 0.33,
@@ -99,7 +176,7 @@
       meld: 0.75,
       random: 1.25
     },
-    on_spawn: function(genes) {
+    on_member: function(genes) {
       return evo.network('feedforward', genes, {
         output_nodes: 1,
         hidden_nodes: 2,
@@ -127,29 +204,14 @@
   };
 
   describe("Pool XOR Test", function() {
-    it("Trains a pool without autospawn", function() {
+    return it("Trains a pool that can solve the XOR problem", function() {
       var pool;
-      pool = evo.pool(config);
-      pool.on('run', function() {
-        var net;
-        net = this.spawn();
-        net.score = scoreNet(net);
-        return this.report(net);
-      });
-      pool.run(function() {
-        return this.average > 3.50 || this.generation > 1000;
-      });
-      return expect(pool.average).toBeGreaterThan(3.5);
-    });
-    return it("Trains a pool with autospawn", function() {
-      var pool;
-      config.autospawn = true;
       pool = evo.pool(config);
       pool.on('run', function(spawn) {
-        return spawn.score = scoreNet(spawn);
+        return spawn._evo.score = scoreNet(spawn);
       });
       pool.run(function() {
-        return this.average > 3.50 || this.generation > 1000;
+        return this.average < 3.50 && this.generation < 1000;
       });
       return expect(pool.average).toBeGreaterThan(3.5);
     });

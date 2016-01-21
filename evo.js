@@ -214,33 +214,29 @@
         var i, l, ref;
         this.config = config1;
         this.generation = 0;
-        this.pool = [];
-        this.breedpool = [];
+        this.genes = [];
         for (i = l = 1, ref = this.config.size; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
-          this.pool.push(this.fresh());
+          this.genes.push(this._freshGenes());
         }
-        this.prev_pool = this.pool.slice(0);
         this.average = 0;
+        this._prevGenes = this.genes.slice(0);
+        this._scoredGenes = [];
       }
 
-      Pool.prototype.seed = function() {
-        return evo.util.random() * this.config.mutate_amount;
-      };
-
-      Pool.prototype.fresh = function() {
+      Pool.prototype._freshGenes = function() {
         var i, l, ref, results;
         results = [];
         for (i = l = 1, ref = this.config.n_genes; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
-          results.push(this.seed());
+          results.push(evo.util.random() * this.config.mutate_amount);
         }
         return results;
       };
 
-      Pool.prototype.clone = function(genes) {
+      Pool.prototype._cloneGenes = function(genes) {
         return genes.slice(0);
       };
 
-      Pool.prototype.mutate = function(genes) {
+      Pool.prototype._mutate = function(genes) {
         var g, i, l, len, new_genes;
         new_genes = [];
         for (i = l = 0, len = genes.length; l < len; i = ++l) {
@@ -253,7 +249,7 @@
         return new_genes;
       };
 
-      Pool.prototype.cross = function(genes1, genes2) {
+      Pool.prototype._crossGenes = function(genes1, genes2) {
         var flip, g, i, l, len, new_genes;
         new_genes = [];
         flip = false;
@@ -267,7 +263,7 @@
         return new_genes;
       };
 
-      Pool.prototype.meld = function(genes1, genes2) {
+      Pool.prototype._meldGenes = function(genes1, genes2) {
         var g, i, l, len, new_genes;
         new_genes = [];
         for (i = l = 0, len = genes1.length; l < len; i = ++l) {
@@ -277,80 +273,89 @@
         return new_genes;
       };
 
-      Pool.prototype.spawn = function(genes) {
-        var spec;
+      Pool.prototype.constructMember = function(genes) {
+        var member;
         if (genes == null) {
           genes = null;
         }
-        if (genes == null) {
-          genes = this.next();
+        member = this.trigger('member', genes);
+        if (member == null) {
+          return null;
         }
-        spec = this.trigger('spawn', genes);
-        if (spec == null) {
-          throw "Spawn trigger did not return an object";
-        }
-        spec.genes = genes;
-        spec.score = 0;
-        spec.report_to_pool = (function(_this) {
+        member._evo = {};
+        member._evo.genes = genes;
+        member._evo.score = 0;
+        member._evo.report = (function(_this) {
           return function() {
-            return _this.report(spec);
+            return _this.report(member);
           };
         })(this);
-        return spec;
+        return member;
       };
 
-      Pool.prototype.next = function() {
-        if (this.pool.length === 0) {
-          if (this.breedpool.length > 0) {
-            this.generate();
+      Pool.prototype.nextGenes = function() {
+        if (this.genes.length === 0) {
+          if (this._scoredGenes.length > 0) {
+            this._generate();
           } else {
-            return this.fresh();
+            return this._freshGenes();
           }
         }
-        return this.pool.pop();
+        return this.genes.pop();
+      };
+
+      Pool.prototype.nextMember = function() {
+        return this.constructMember(this.nextGenes());
       };
 
       Pool.prototype.report = function(genes, score) {
         if (score == null) {
           score = 0;
         }
-        if ((genes.score != null) && (genes.genes != null)) {
-          score = genes.score;
-          genes = genes.genes;
+        if (genes._evo != null) {
+          score = genes._evo.score;
+          genes = genes._evo.genes;
         }
-        return this.breedpool.push({
+        return this._scoredGenes.push({
           genes: genes,
           score: score
         });
       };
 
       Pool.prototype.run = function(stop_fn) {
-        var genes, max, score, spawn;
+        var i, l, ref;
         if (typeof stop_fn === 'number') {
-          max = stop_fn + this.generation;
-          this.config.on_stop = function() {
-            return this.generation >= max;
-          };
-        } else if (typeof stop_fn === 'function') {
-          this.config.on_stop = stop_fn;
-        }
-        while (!this.trigger('stop')) {
-          if (this.config.autospawn && (this.config.on_spawn != null)) {
-            spawn = this.spawn();
-            this.trigger('run', spawn);
-            this.report(spawn);
-          } else if (this.config.autospawn) {
-            genes = this.next();
-            score = this.trigger('run', genes);
-            this.report(genes, score);
-          } else {
-            this.trigger('run');
+          for (i = l = 1, ref = stop_fn; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
+            this._runOnce();
           }
+        } else if (typeof stop_fn === 'function') {
+          while (stop_fn.call(this)) {
+            this._runOnce();
+          }
+        } else if (typeof this.config.on_stop === 'function') {
+          while (this.trigger('stop')) {
+            _runOnce();
+          }
+        } else {
+          throw "Stopping number or function not supplied";
         }
         return this.trigger('finish');
       };
 
-      Pool.prototype.mean = function(pool) {
+      Pool.prototype._runOnce = function() {
+        var member, score;
+        member = this.nextMember() || this.nextGenes();
+        score = this.trigger('run', member);
+        if (member._evo != null) {
+          return this.report(member);
+        } else if (typeof score !== "undefined") {
+          return this.report(member, score);
+        } else {
+          throw "score was not returned in run function";
+        }
+      };
+
+      Pool.prototype._mean = function(pool) {
         var a, avg, l, len;
         avg = 0;
         for (l = 0, len = pool.length; l < len; l++) {
@@ -360,67 +365,67 @@
         return avg /= pool.length;
       };
 
-      Pool.prototype.generate = function() {
+      Pool.prototype._generate = function() {
         var a, g1, g2, i, l, len, n, p, q, r, ratios, ref, ref1, ref2, ref3, size, top_pool;
         ratios = evo.util.normalize(this.config.ratios);
-        this.pool = [];
-        this.average = this.mean(this.breedpool);
-        this.breedpool = this.breedpool.sort(function(a, b) {
+        this.genes = [];
+        this.average = this._mean(this._scoredGenes);
+        this._scoredGenes = this._scoredGenes.sort(function(a, b) {
           return a.score - b.score;
         });
-        top_pool = this.breedpool.reverse().slice(0, +(this.config.ratios.top * this.config.size) + 1 || 9e9);
+        top_pool = this._scoredGenes.reverse().slice(0, +(this.config.ratios.top * this.config.size) + 1 || 9e9);
         size = this.config.size;
         if (size < 1) {
           size = 0;
         }
         for (l = 0, len = top_pool.length; l < len; l++) {
           a = top_pool[l];
-          this.pool.push(this.clone(a.genes));
+          this.genes.push(this._cloneGenes(a.genes));
         }
         if (ratios.mutate > 0) {
           for (i = n = 1, ref = ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
-            this.pool.push(this.mutate(evo.util.sample(top_pool).genes));
+            this.genes.push(this._mutate(evo.util.sample(top_pool).genes));
           }
         }
         if (ratios.cross > 0) {
           for (i = p = 1, ref1 = ratios.cross * size; 1 <= ref1 ? p <= ref1 : p >= ref1; i = 1 <= ref1 ? ++p : --p) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
-            this.pool.push(this.cross(g1, g2));
+            this.genes.push(this._crossGenes(g1, g2));
           }
         }
         if (ratios.meld > 0) {
           for (i = q = 1, ref2 = ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
-            this.pool.push(this.meld(g1, g2));
+            this.genes.push(this._meldGenes(g1, g2));
           }
         }
         if (ratios.random > 0) {
           for (i = r = 1, ref3 = ratios.random * size; 1 <= ref3 ? r <= ref3 : r >= ref3; i = 1 <= ref3 ? ++r : --r) {
-            this.pool.push(this.clone(evo.util.sample(this.breedpool).genes));
+            this.genes.push(this._cloneGenes(evo.util.sample(this._scoredGenes).genes));
           }
         }
-        while (this.pool.length <= size) {
-          this.pool.push(this.fresh());
+        while (this.genes.length <= size) {
+          this.genes.push(this._freshGenes());
         }
         this.generation++;
-        this.prev_pool = this.pool.slice(0);
-        this.pool = evo.util.shuffle(this.pool);
+        this._prevGenes = this.genes.slice(0);
+        this.genes = evo.util.shuffle(this.genes);
         this.trigger('breed');
-        return this.breedpool = [];
+        return this._scoredGenes = [];
       };
 
-      Pool.prototype.best = function(number) {
+      Pool.prototype.bestGenes = function(number) {
         if (number == null) {
-          return this.prev_pool[0];
+          return this._prevGenes[0];
         }
-        return this.prev_pool.slice(0, +(number - 1) + 1 || 9e9);
+        return this._prevGenes.slice(0, +(number - 1) + 1 || 9e9);
       };
 
-      Pool.prototype.load = function(genes) {
-        this.pool = genes.slice(0);
-        return this.breedpool = [];
+      Pool.prototype.loadGenes = function(genes) {
+        this.genes = genes.slice(0);
+        return this._scoredGenes = [];
       };
 
       return Pool;

@@ -200,36 +200,33 @@ root = if window? then window else this
             @generation = 0
 
             ## List of genes waiting to be tested
-            @pool = []
+            @genes = []
 
-            ## List of gene objects that have been tested
-            @breedpool = []
 
             ## Initialize pool with fresh genes
-            @pool.push @fresh() for i in [1..@config.size]
-
-            ## Object of the last pool
-            @prev_pool = @pool[..]
+            @genes.push @_freshGenes() for i in [1..@config.size]
 
             ## Keep track of the current average
             @average = 0
 
+            ## Object of the last pool
+            @_prevGenes = @genes[..]
+
+            ## List of gene objects that have been tested
+            @_scoredGenes = []
 
         ## -------------------------------
         ## Methods for generating genomes
         ## -------------------------------
 
-        ## Function for each gene in a genome
-        seed: -> evo.util.random()*@config.mutate_amount 
-
-        ## Create a fresh random genome 
-        fresh: -> (@seed() for i in [1..@config.n_genes])
+        ## Create a fresh random set of genes
+        _freshGenes: -> (evo.util.random() * @config.mutate_amount for i in [1..@config.n_genes])
 
         ## Clone a genome gene for gene
-        clone: (genes) -> genes[..]
+        _cloneGenes: (genes) -> genes[..]
 
         ## Clone a genome with the chance for muations
-        mutate: (genes) ->
+        _mutate: (genes) ->
             new_genes = []
 
             for g, i in genes
@@ -241,7 +238,7 @@ root = if window? then window else this
             return new_genes
 
         ## Cross two genomes into one
-        cross: (genes1, genes2) ->
+        _crossGenes: (genes1, genes2) ->
             new_genes = []
 
             flip = false
@@ -252,7 +249,7 @@ root = if window? then window else this
             return new_genes
 
         ## Average two gene sets together
-        meld: (genes1, genes2)->
+        _meldGenes: (genes1, genes2)->
             new_genes = []
 
             for g, i in genes1
@@ -261,111 +258,113 @@ root = if window? then window else this
             return new_genes
 
         ## Construct a Spawn object
-        spawn: (genes=null)->
-            ## Get the genes
-            genes = @next() unless genes?
+        constructMember: (genes=null)->
 
             ## Start with a user specified object
-            spec = @trigger 'spawn', genes
+            member = @trigger 'member', genes
 
-            throw "Spawn trigger did not return an object" if not spec?
+            #return null if no
+            return null if not member?
+
+            ## Add the evo object
+            member._evo = {}
 
             ## Add the genes object
-            spec.genes = genes
+            member._evo.genes = genes
 
             ## Initialize score
-            spec.score = 0
+            member._evo.score = 0
 
             ## Give it a pool report function
-            spec.report_to_pool = => @report spec
+            member._evo.report = => @report member
 
-            return spec
+            return member
 
         ## Retrieve the next genome in the list,
         # Breeding a generation if necessary
-        next: ->
-            if @pool.length == 0
-                if @breedpool.length > 0
-                    @generate() 
+        nextGenes: ->
+            if @genes.length == 0
+                if @_scoredGenes.length > 0
+                    @_generate()
                 else
-                    return @fresh()
+                    return @_freshGenes()
 
-            @pool.pop()
+            @genes.pop()
+
+        ##Retrieve the next constructed member
+        nextMember: ->
+          @constructMember @nextGenes()
 
         ## Reports back genes to the pool
         # genes is either a genome or a object
         # containing the genes, i.e. a spawned object
         report: (genes, score=0)->
             ## If genes is an object
-            if genes.score? and genes.genes?
-                score = genes.score
-                genes = genes.genes
+            if genes._evo?
+                score = genes._evo.score
+                genes = genes._evo.genes
 
-            ## Push a simple genome object
-            @breedpool.push 
+            ## Push a simple object to the _scoredGenes
+            @_scoredGenes.push
                 genes: genes
                 score: score
 
 
         ## Run a simulation while a condition returns false
         run: (stop_fn)->
-
             if typeof stop_fn is 'number'
-                ## Default function is generation count
-                max = stop_fn + @generation
-                @config.on_stop = ->
-                    @generation >= max
+                for i in [1..stop_fn]
+                    @_runOnce()
 
             else if typeof stop_fn is 'function'
-                @config.on_stop = stop_fn
+                while stop_fn.call(this)
+                    @_runOnce()
 
-            ## Run the simulation
-            while not @trigger 'stop'
+            else if typeof @config.on_stop is 'function'
+                while @trigger 'stop'
+                    _runOnce()
 
-                ## If autospawn is on and there is a spawn function, 
-                # Run the method with a spawn object
-                if @config.autospawn and @config.on_spawn?
-                    spawn = @spawn()
-                    @trigger 'run', spawn
-                    @report spawn
-
-                ## If autospawn is on but no spawn function exists, 
-                # run the simulation 
-                else if @config.autospawn
-                    genes = @next()
-                    score = @trigger 'run', genes
-                    @report genes, score
-
-                ## If no spawn and no autospawn, Let the user handle simulations
-                else
-                    @trigger 'run'
+            else throw "Stopping number or function not supplied"
 
             @trigger 'finish'
 
-        ## Average the score of a list of genome objects
-        mean: (pool)->
+        ## Run one organism
+        _runOnce: ->
+          ## If autospawn is on and there is a spawn function,
+          # Run the method with a spawn object
+          member = @nextMember() || @nextGenes()
+          score = @trigger 'run', member
+          if member._evo?
+            @report member
+          else if typeof score != "undefined"
+            @report member, score
+          else
+            throw "score was not returned in run function"
+
+        ## Average the score of a list of scored genes
+        _mean: (pool)->
             avg = 0
             avg += a.score for a in pool
             avg /= pool.length
 
-        ## Calculates the next generation based on the breedpool,
+        ## Calculates the next generation based on the _scoredGenes,
         # And inserts it into the pool object
-        generate: ()->
+        _generate: ()->
 
             ## Normalize them ratios
             ratios = evo.util.normalize(@config.ratios)
 
             ## Ensure the pool is empty
-            @pool = []
+            @genes = []
 
             ## Store the average
-            @average = @mean @breedpool
+            @average = @_mean @_scoredGenes
 
-            ## Sort the breedpool by score
-            @breedpool = @breedpool.sort (a,b)-> a.score - b.score
+            ## Sort the _scoredGenes by score
+            @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score
 
             ## add the top scoring genes
-            top_pool = @breedpool.reverse()[0..@config.ratios.top * @config.size]
+            top_pool = @_scoredGenes.reverse()[0..@config.ratios.top * @config.size]
 
             ## Amount remaining to breed
             size = @config.size # - top_pool.length
@@ -373,65 +372,64 @@ root = if window? then window else this
 
             ## Add top entries from breed pool
             for a in top_pool
-                @pool.push @clone(a.genes)
+                @genes.push @_cloneGenes(a.genes)
 
             if ratios.mutate > 0
                 ## Add mutated entries
                 for i in [1..ratios.mutate*size]
-                    @pool.push @mutate(evo.util.sample(top_pool).genes)
+                    @genes.push @_mutate(evo.util.sample(top_pool).genes)
 
             if ratios.cross > 0
                 ## Add Crossed entries
                 for i in [1..ratios.cross*size]
                     g1 = evo.util.sample(top_pool).genes
                     g2 = evo.util.sample(top_pool).genes
-                    @pool.push @cross(g1, g2)
+                    @genes.push @_crossGenes(g1, g2)
 
             if ratios.meld > 0
                 ## Add Melded entries
                 for i in [1..ratios.meld*size]
                     g1 = evo.util.sample(top_pool).genes
                     g2 = evo.util.sample(top_pool).genes
-                    @pool.push @meld(g1, g2)
+                    @genes.push @_meldGenes(g1, g2)
 
             if ratios.random > 0
                 ## Add random survivors
                 for i in [1..ratios.random*size]
-                    @pool.push @clone(evo.util.sample(@breedpool).genes)
+                    @genes.push @_cloneGenes(evo.util.sample(@_scoredGenes).genes)
 
             ## Fill the rest with fresh genetics
-            @pool.push @fresh() while @pool.length <= size
+            @genes.push @_freshGenes() while @genes.length <= size
 
             ## Increment the generation count
             @generation++
 
             ## Save a static copy of the pool for reference
             ## Round all Genes to two places
-            @prev_pool = @pool[..]
+            @_prevGenes = @genes[..]
 
             ## Shuffle the pool to get fresh matches
-            @pool = evo.util.shuffle @pool            
+            @genes = evo.util.shuffle @genes
 
             # Trigger the breed callback
             @trigger 'breed'
 
             ## Clear the breed pool for the next generation
-            @breedpool = [] 
+            @_scoredGenes = []
 
         ## Return the best of the last generation bred
-        best: (number)->
-            return @prev_pool[0] if not number?
-            return @prev_pool[0..number-1]
+        bestGenes: (number)->
+            return @_prevGenes[0] if not number?
+            return @_prevGenes[0..number-1]
 
         ## Load genes into the pool
-        load: (genes)->
+        loadGenes: (genes)->
 
             ## Load genes into the pool
-            @pool = genes[..]
+            @genes = genes[..]
 
-            ## Clear the Breed pool
-            @breedpool = []
-
+            ## Clear the scored Genes
+            @_scoredGenes = []
 
     ## Network Class
 
