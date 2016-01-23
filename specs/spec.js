@@ -35,6 +35,56 @@
 }).call(this);
 
 (function() {
+  var data, x;
+
+  data = (function() {
+    var j, results;
+    results = [];
+    for (x = j = 0; j <= 100; x = ++j) {
+      results.push({
+        x: x / 100,
+        y: Math.pow(x / 100.0, 4) + 2 * Math.pow(x / 100, 3) + 3 * Math.pow(x / 100, 2)
+      });
+    }
+    return results;
+  })();
+
+  describe("Line fitting test", function() {
+    return it("Trains a pool that can solve the XOR problem", function() {
+      var evalGenes, pool;
+      evalGenes = function(genes) {
+        var dist, j, len, p, poly;
+        poly = function(x) {
+          var i, j, sum;
+          sum = 0;
+          for (i = j = 0; j <= 4; i = ++j) {
+            sum += genes[i] * Math.pow(x, i);
+          }
+          return sum;
+        };
+        dist = 0;
+        for (j = 0, len = data.length; j < len; j++) {
+          p = data[j];
+          dist += Math.pow(poly(p.x) - p.y, 2);
+        }
+        return -dist;
+      };
+      pool = evo.pool({
+        mutate_amount: 10.0
+      });
+      pool.on('run', function(genes) {
+        return evalGenes(genes);
+      });
+      pool.on('breed', function() {
+        return console.log(this.average);
+      });
+      return pool.run(10000);
+    });
+  });
+
+}).call(this);
+
+(function() {
   var config, n_genes, size;
 
   n_genes = 10;
@@ -42,7 +92,7 @@
   size = 400;
 
   config = {
-    n_genes: n_genes,
+    genes: n_genes,
     size: size,
     cross_rate: 0.10,
     mutate_rate: 0.7,
@@ -163,7 +213,7 @@
   var config, scoreNet;
 
   config = {
-    n_genes: 10,
+    genes: 10,
     size: 400,
     cross_rate: 0.10,
     mutate_rate: 0.7,

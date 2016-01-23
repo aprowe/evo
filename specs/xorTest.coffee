@@ -1,6 +1,6 @@
 
 config =
-    n_genes: 10
+    genes: 10
     size: 400
 
     cross_rate: 0.10

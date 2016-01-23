@@ -2,7 +2,7 @@ n_genes = 10
 size = 400
 
 config =
-    n_genes: n_genes
+    genes: n_genes
     size: size
 
     cross_rate: 0.10
@@ -82,3 +82,5 @@ describe 'Pool Population', ->
 
     it "Gene sets have the right number of genes", ->
         pool = evo.pool(config);expect(pool.genes[0].length).toBe n_genes
+
+describe "When running a simulation"

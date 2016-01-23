@@ -1,5 +1,5 @@
 /**
- * evo.js v0.1.0
+ * evo.js v0.1.1
  * Genetic Algorithm Calculator with ANN
  * Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
  * Licensed MIT
@@ -26,12 +26,11 @@
     evo = {};
     evo.config = {
       pool: {
-        n_genes: 200,
+        genes: 200,
         cross_rate: 0.05,
         mutate_rate: 0.05,
         mutate_amount: 1.0,
         size: 100,
-        autospawn: false,
         ratios: {
           top: 0.25,
           mutate: 0.25,
@@ -41,7 +40,7 @@
           fresh: 0.15
         },
         on_breed: function() {},
-        on_spawn: void 0,
+        on_member: void 0,
         on_run: function() {},
         on_finish: function() {}
       },
@@ -223,56 +222,6 @@
         this._scoredGenes = [];
       }
 
-      Pool.prototype._freshGenes = function() {
-        var i, l, ref, results;
-        results = [];
-        for (i = l = 1, ref = this.config.n_genes; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
-          results.push(evo.util.random() * this.config.mutate_amount);
-        }
-        return results;
-      };
-
-      Pool.prototype._cloneGenes = function(genes) {
-        return genes.slice(0);
-      };
-
-      Pool.prototype._mutate = function(genes) {
-        var g, i, l, len, new_genes;
-        new_genes = [];
-        for (i = l = 0, len = genes.length; l < len; i = ++l) {
-          g = genes[i];
-          new_genes[i] = genes[i];
-          if (Math.random() < this.config.mutate_rate) {
-            new_genes[i] += evo.util.random() * this.config.mutate_amount;
-          }
-        }
-        return new_genes;
-      };
-
-      Pool.prototype._crossGenes = function(genes1, genes2) {
-        var flip, g, i, l, len, new_genes;
-        new_genes = [];
-        flip = false;
-        for (i = l = 0, len = genes1.length; l < len; i = ++l) {
-          g = genes1[i];
-          if (Math.random() < this.config.cross_rate) {
-            flip = !flip;
-          }
-          new_genes.push((flip ? genes1[i] : genes2[i]));
-        }
-        return new_genes;
-      };
-
-      Pool.prototype._meldGenes = function(genes1, genes2) {
-        var g, i, l, len, new_genes;
-        new_genes = [];
-        for (i = l = 0, len = genes1.length; l < len; i = ++l) {
-          g = genes1[i];
-          new_genes.push((genes1[i] + genes2[i]) / 2);
-        }
-        return new_genes;
-      };
-
       Pool.prototype.constructMember = function(genes) {
         var member;
         if (genes == null) {
@@ -342,6 +291,68 @@
         return this.trigger('finish');
       };
 
+      Pool.prototype.bestGenes = function(number) {
+        if (number == null) {
+          return this._prevGenes[0];
+        }
+        return this._prevGenes.slice(0, +(number - 1) + 1 || 9e9);
+      };
+
+      Pool.prototype.loadGenes = function(genes) {
+        this.genes = genes.slice(0);
+        return this._scoredGenes = [];
+      };
+
+      Pool.prototype._freshGenes = function() {
+        var i, l, ref, results;
+        results = [];
+        for (i = l = 1, ref = this.config.genes; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
+          results.push(evo.util.random() * this.config.mutate_amount);
+        }
+        return results;
+      };
+
+      Pool.prototype._cloneGenes = function(genes) {
+        return genes.slice(0);
+      };
+
+      Pool.prototype._mutateGenes = function(genes) {
+        var g, i, l, len, new_genes;
+        new_genes = [];
+        for (i = l = 0, len = genes.length; l < len; i = ++l) {
+          g = genes[i];
+          new_genes[i] = genes[i];
+          if (Math.random() < this.config.mutate_rate) {
+            new_genes[i] += evo.util.random() * this.config.mutate_amount;
+          }
+        }
+        return new_genes;
+      };
+
+      Pool.prototype._crossGenes = function(genes1, genes2) {
+        var flip, g, i, l, len, new_genes;
+        new_genes = [];
+        flip = false;
+        for (i = l = 0, len = genes1.length; l < len; i = ++l) {
+          g = genes1[i];
+          if (Math.random() < this.config.cross_rate) {
+            flip = !flip;
+          }
+          new_genes.push((flip ? genes1[i] : genes2[i]));
+        }
+        return new_genes;
+      };
+
+      Pool.prototype._averageGenes = function(genes1, genes2) {
+        var g, i, l, len, new_genes;
+        new_genes = [];
+        for (i = l = 0, len = genes1.length; l < len; i = ++l) {
+          g = genes1[i];
+          new_genes.push((genes1[i] + genes2[i]) / 2);
+        }
+        return new_genes;
+      };
+
       Pool.prototype._runOnce = function() {
         var member, score;
         member = this.nextMember() || this.nextGenes();
@@ -384,7 +395,7 @@
         }
         if (ratios.mutate > 0) {
           for (i = n = 1, ref = ratios.mutate * size; 1 <= ref ? n <= ref : n >= ref; i = 1 <= ref ? ++n : --n) {
-            this.genes.push(this._mutate(evo.util.sample(top_pool).genes));
+            this.genes.push(this._mutateGenes(evo.util.sample(top_pool).genes));
           }
         }
         if (ratios.cross > 0) {
@@ -394,11 +405,11 @@
             this.genes.push(this._crossGenes(g1, g2));
           }
         }
-        if (ratios.meld > 0) {
+        if (ratios.average > 0) {
           for (i = q = 1, ref2 = ratios.meld * size; 1 <= ref2 ? q <= ref2 : q >= ref2; i = 1 <= ref2 ? ++q : --q) {
             g1 = evo.util.sample(top_pool).genes;
             g2 = evo.util.sample(top_pool).genes;
-            this.genes.push(this._meldGenes(g1, g2));
+            this.genes.push(this._averageGenes(g1, g2));
           }
         }
         if (ratios.random > 0) {
@@ -413,18 +424,6 @@
         this._prevGenes = this.genes.slice(0);
         this.genes = evo.util.shuffle(this.genes);
         this.trigger('breed');
-        return this._scoredGenes = [];
-      };
-
-      Pool.prototype.bestGenes = function(number) {
-        if (number == null) {
-          return this._prevGenes[0];
-        }
-        return this._prevGenes.slice(0, +(number - 1) + 1 || 9e9);
-      };
-
-      Pool.prototype.loadGenes = function(genes) {
-        this.genes = genes.slice(0);
         return this._scoredGenes = [];
       };
 

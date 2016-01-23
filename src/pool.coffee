@@ -1,5 +1,4 @@
 ## Pool Class
-
 evo.pool = (config)->
     config = evo.util.extend evo.config.pool, config
     return new Pool(config)
@@ -26,49 +25,11 @@ class Pool extends Base
         ## List of gene objects that have been tested
         @_scoredGenes = []
 
-    ## -------------------------------
-    ## Methods for generating genomes
-    ## -------------------------------
+    #######################
+    ## Public Methods
+    #######################
 
-    ## Create a fresh random set of genes
-    _freshGenes: -> (evo.util.random() * @config.mutate_amount for i in [1..@config.n_genes])
-
-    ## Clone a genome gene for gene
-    _cloneGenes: (genes) -> genes[..]
-
-    ## Clone a genome with the chance for muations
-    _mutate: (genes) ->
-        new_genes = []
-
-        for g, i in genes
-            new_genes[i] = genes[i]
-
-            if Math.random() < @config.mutate_rate
-                new_genes[i] += evo.util.random() * @config.mutate_amount
-
-        return new_genes
-
-    ## Cross two genomes into one
-    _crossGenes: (genes1, genes2) ->
-        new_genes = []
-
-        flip = false
-        for g, i in genes1
-            flip = !flip if Math.random() < @config.cross_rate
-            new_genes.push (if flip then genes1[i] else genes2[i])
-
-        return new_genes
-
-    ## Average two gene sets together
-    _meldGenes: (genes1, genes2)->
-        new_genes = []
-
-        for g, i in genes1
-            new_genes.push (genes1[i] + genes2[i])/2
-
-        return new_genes
-
-    ## Construct a Spawn object
+    ## Construct a Member object
     constructMember: (genes=null)->
 
         ## Start with a user specified object
@@ -120,7 +81,6 @@ class Pool extends Base
             genes: genes
             score: score
 
-
     ## Run a simulation while a condition returns false
     run: (stop_fn)->
         if typeof stop_fn is 'number'
@@ -138,6 +98,66 @@ class Pool extends Base
         else throw "Stopping number or function not supplied"
 
         @trigger 'finish'
+
+    ## Return the best of the last generation bred
+    bestGenes: (number)->
+        return @_prevGenes[0] if not number?
+        return @_prevGenes[0..number-1]
+
+    ## Load genes into the pool
+    loadGenes: (genes)->
+
+        ## Load genes into the pool
+        @genes = genes[..]
+
+        ## Clear the scored Genes
+        @_scoredGenes = []
+
+    #######################
+    ## Private Methods
+    #######################
+
+    ## -------------------------------
+    ## Methods for generating genomes
+    ## -------------------------------
+
+    ## Create a fresh random set of genes
+    _freshGenes: -> (evo.util.random() * @config.mutate_amount for i in [1..@config.genes])
+
+    ## Clone a genome gene for gene
+    _cloneGenes: (genes) -> genes[..]
+
+    ## Clone a genome with the chance for muations
+    _mutateGenes: (genes) ->
+        new_genes = []
+
+        for g, i in genes
+            new_genes[i] = genes[i]
+
+            if Math.random() < @config.mutate_rate
+                new_genes[i] += evo.util.random() * @config.mutate_amount
+
+        return new_genes
+
+    ## Cross two genomes into one
+    _crossGenes: (genes1, genes2) ->
+        new_genes = []
+
+        flip = false
+        for g, i in genes1
+            flip = !flip if Math.random() < @config.cross_rate
+            new_genes.push (if flip then genes1[i] else genes2[i])
+
+        return new_genes
+
+    ## Average two gene sets together
+    _averageGenes: (genes1, genes2)->
+        new_genes = []
+
+        for g, i in genes1
+            new_genes.push (genes1[i] + genes2[i])/2
+
+        return new_genes
 
     ## Run one organism
     _runOnce: ->
@@ -188,7 +208,7 @@ class Pool extends Base
         if ratios.mutate > 0
             ## Add mutated entries
             for i in [1..ratios.mutate*size]
-                @genes.push @_mutate(evo.util.sample(top_pool).genes)
+                @genes.push @_mutateGenes(evo.util.sample(top_pool).genes)
 
         if ratios.cross > 0
             ## Add Crossed entries
@@ -197,12 +217,12 @@ class Pool extends Base
                 g2 = evo.util.sample(top_pool).genes
                 @genes.push @_crossGenes(g1, g2)
 
-        if ratios.meld > 0
+        if ratios.average > 0
             ## Add Melded entries
             for i in [1..ratios.meld*size]
                 g1 = evo.util.sample(top_pool).genes
                 g2 = evo.util.sample(top_pool).genes
-                @genes.push @_meldGenes(g1, g2)
+                @genes.push @_averageGenes(g1, g2)
 
         if ratios.random > 0
             ## Add random survivors
@@ -226,18 +246,4 @@ class Pool extends Base
         @trigger 'breed'
 
         ## Clear the breed pool for the next generation
-        @_scoredGenes = []
-
-    ## Return the best of the last generation bred
-    bestGenes: (number)->
-        return @_prevGenes[0] if not number?
-        return @_prevGenes[0..number-1]
-
-    ## Load genes into the pool
-    loadGenes: (genes)->
-
-        ## Load genes into the pool
-        @genes = genes[..]
-
-        ## Clear the scored Genes
         @_scoredGenes = []

@@ -1,9 +1,9 @@
 ## Default Configuration Object
-evo.config = 
+evo.config =
     pool:
 
         ## Number of Genes in a genetic object
-        n_genes: 200
+        genes: 200
 
         ## The frequency of "twists" in two parents genes
         cross_rate: 0.05
@@ -16,9 +16,6 @@ evo.config =
 
         ## The initial pool size
         size: 100
-
-        ## Enable Auto spawn
-        autospawn: false
 
         ## Ratios each generation will compromise
         ratios:
@@ -42,20 +39,20 @@ evo.config =
             fresh:  0.15
 
         on_breed: ->
-            
-        on_spawn: undefined
+
+        on_member: undefined
 
         on_run: ->
 
         on_finish: ->
 
-    network: 
+    network:
         output_fn: 'tanh'
 
         output_nodes: 2
 
         hidden_layers: 2
-        
+
         hidden_nodes: 2
 
         input_nodes: 2
