@@ -1,6 +1,6 @@
- evojs
+evoJS
 =========
-evojs is a genetic and evolutionary algorithm tool, making it easy to incorporate evolutionary algorithms in your JavaScript.  
+evoJS is a genetic and evolutionary algorithm tool, making it easy to incorporate evolutionary algorithms in your JavaScript.  
 
 Installation
 -------------
