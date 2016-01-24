@@ -1,6 +1,6 @@
 {
   "name": "evo-js",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Evolutionary Algorithm Tool wrapped with ANN",
   "main": "evo.js",
   "scripts": {
@@ -34,5 +34,5 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-execute": "^0.2.2"
   },
-  "tonicExampleFilename":"examples/XOR.js"
+  "tonicExampleFilename": "examples/XOR.js"
 }
