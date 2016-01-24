@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aprowe/evojs.git"
+    "url": "https://github.com/aprowe/evo.git"
   },
   "keywords": [
     "evolutionary",
@@ -20,9 +20,9 @@
   "author": "Alex Rowe",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aprowe/evojs/issues"
+    "url": "https://github.com/aprowe/evo/issues"
   },
-  "homepage": "https://github.com/aprowe/evojs",
+  "homepage": "https://github.com/aprowe/evo",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-contrib-coffee": "~0.13.0",
