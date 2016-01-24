@@ -223,7 +223,7 @@
       pool.run(size * 9);
       return expect(pool._history.length).toBe(pool.generation);
     });
-    it("increments generation count after all members tested", function() {
+    return it("increments generation count after all members tested", function() {
       var pool;
       pool = evo.pool(config);
       pool.on("run", function(genes) {
@@ -237,16 +237,114 @@
       pool.run(size + 1);
       return expect(pool.generation).toBe(3);
     });
-    return it("Automatically stops when automated", function() {
-      var average, pool;
+  });
+
+  describe("Run Configuration object", function() {
+    it("Will run a specific amount of iterations", function() {
+      var pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function() {
+        return 0.5;
+      });
+      run_config = {
+        iterations: 1234
+      };
+      pool.run(run_config);
+      return expect(pool.iteration).toBe(1234);
+    });
+    it("will run a specific amount of generations", function() {
+      var pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function() {
+        return 0.5;
+      });
+      run_config = {
+        generations: 111
+      };
+      pool.run(run_config);
+      return expect(pool.generation).toBe(111);
+    });
+    it("will stop when a specific max score is reached", function() {
+      var pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function(g) {
+        return g[0];
+      });
+      run_config = {
+        score: 2.0
+      };
+      pool.run(run_config);
+      return expect(pool.average).toBeGreaterThan(2.0);
+    });
+    it("will stop when a while function returns false", function() {
+      var i, pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function(g) {
+        return g[0];
+      });
+      i = 0;
+      run_config = {
+        "while": function() {
+          return i++ < 145;
+        }
+      };
+      pool.run(run_config);
+      return expect(i).toBe(146);
+    });
+    it("will autodetect when score is optimized", function() {
+      var pool, run_config;
       pool = evo.pool(config);
       pool.on("run", function(genes) {
         return -Math.abs(genes[0]);
       });
-      pool.run(1);
-      average = pool.average;
-      pool.run();
-      return expect(pool.average).toBeLessThan(average);
+      run_config = {
+        auto_stop: true,
+        generations: 100
+      };
+      pool.run(run_config);
+      return expect(pool.average).toBeLessThan(0.1);
+    });
+    it("will autodetect when score is not improving", function() {
+      var i, pool, run_config;
+      pool = evo.pool(config);
+      i = 0;
+      pool.on("run", function(genes) {
+        return i++;
+      });
+      run_config = {
+        auto_stop: true,
+        generations: 100
+      };
+      pool.run(run_config);
+      return expect(pool.generation).toBe(100);
+    });
+    it("Can call subsequent run calls for generations", function() {
+      var pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function(genes) {
+        return 0.0;
+      });
+      run_config = {
+        generations: 100
+      };
+      pool.run(run_config);
+      expect(pool.generation).toBe(100);
+      pool.run(run_config);
+      return expect(pool.generation).toBe(200);
+    });
+    return it("Can call subsequent run calls for iterations", function() {
+      var pool, run_config;
+      pool = evo.pool(config);
+      pool.on("run", function(genes) {
+        return 0.0;
+      });
+      run_config = {
+        iterations: 100
+      };
+      pool.run(run_config);
+      expect(pool.iteration).toBe(100);
+      pool.run(run_config);
+      return expect(pool.iteration).toBe(200);
     });
   });
 
@@ -322,8 +420,9 @@
       pool.on('run', function(spawn) {
         return spawn._evo.score = scoreNet(spawn);
       });
-      pool.run(function() {
-        return this.average < 3.50 && this.generation < 1000;
+      pool.run({
+        auto_stop: true,
+        generations: 100
       });
       return expect(pool.average).toBeGreaterThan(3.5);
     });

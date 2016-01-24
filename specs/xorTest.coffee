@@ -37,7 +37,10 @@ describe "Pool XOR Test", ->
         pool.on 'run', (spawn)->
             spawn._evo.score = scoreNet spawn
 
-        pool.run -> @average < 3.50 and @generation < 1000
-        # pool.run()
+        # pool.run -> @average < 3.50 and @generation < 1000
+        pool.run
+            auto_stop: true
+            generations: 100
+            # score: 3.5
 
         expect(pool.average).toBeGreaterThan(3.5)

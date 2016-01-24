@@ -31,9 +31,6 @@
         mutate_rate: 0.05,
         mutate_amount: 1.0,
         size: 100,
-        size: 100,
-        max_generations: 100,
-        min_generations: 50,
         ratios: {
           top: 0.25,
           mutate: 0.25,
@@ -43,13 +40,12 @@
           fresh: 0.15
         },
         run_conditions: {
-          max_iterations: Infinity,
-          max_generations: Infinity,
-          min_score: -Infinity,
-          max_score: Infinity,
-          "while": function() {
-            return true;
-          }
+          generations: 1000,
+          iterations: void 0,
+          score: Infinity,
+          auto_stop: false,
+          min_generations: 10,
+          "while": void 0
         },
         on_breed: void 0,
         on_member: void 0,
@@ -249,6 +245,7 @@
         var i, l, ref;
         this.config = config1;
         this.generation = 0;
+        this.iteration = 0;
         this.genes = [];
         for (i = l = 1, ref = this.config.size; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
           this.genes.push(this._freshGenes());
@@ -303,6 +300,7 @@
         if (score == null) {
           score = 0;
         }
+        this.iteration++;
         if (genes._evo != null) {
           score = genes._evo.score;
           genes = genes._evo.genes;
@@ -313,33 +311,59 @@
         });
       };
 
-      Pool.prototype.run = function(stop_fn) {
-        var i, l, mean, n, ref, ref1, stddev;
-        if (typeof stop_fn === 'number') {
-          for (i = l = 1, ref = stop_fn; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
-            this._runOnce();
-          }
-        } else if (typeof stop_fn === 'function') {
-          while (stop_fn.call(this)) {
-            this._runOnce();
-          }
-        } else if (typeof this.config.on_stop === 'function') {
-          while (this.trigger('stop')) {
-            this._runOnce();
-          }
-        } else {
-          this._history = [this.average];
-          for (i = n = 1, ref1 = this.config.max_generations * this.config.size; 1 <= ref1 ? n <= ref1 : n >= ref1; i = 1 <= ref1 ? ++n : --n) {
-            this._runOnce();
-            if (i < this.config.min_generations) {
-              continue;
-            }
-            stddev = evo.util.stddev(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
-            mean = evo.util.mean(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
-            if (Math.abs(this._history[this._history.length - 1] - mean) < stddev * stddev) {
-              break;
-            }
-          }
+      Pool.prototype._checkRun = function(run_config) {
+        var run;
+        run = true;
+        if (run_config.generations != null) {
+          run = run && this.generation < run_config.generations;
+        }
+        if (run_config.iterations != null) {
+          run = run && this.iteration < run_config.iterations;
+        }
+        if (run_config.score != null) {
+          run = run && this.average < run_config.score;
+        }
+        if (run_config["while"] != null) {
+          run = run && run_config["while"].call(this);
+        }
+        if (this._scoredGenes.length === 0 && run_config.auto_stop) {
+          run = run && !this._autoStop(run_config);
+        }
+        return run;
+      };
+
+      Pool.prototype._autoStop = function(run_config) {
+        var mean, stddev;
+        if (this._history.length < run_config.min_generations) {
+          return false;
+        }
+        stddev = evo.util.stddev(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
+        mean = evo.util.mean(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
+        return Math.abs(this._history[this._history.length - 1] - mean) > stddev * stddev;
+      };
+
+      Pool.prototype.run = function(run_config) {
+        if (run_config == null) {
+          run_config = {};
+        }
+        if (typeof run_config === 'number') {
+          run_config = {
+            iterations: run_config
+          };
+        } else if (typeof run_config === 'function') {
+          run_config = {
+            "while": run_config
+          };
+        }
+        if (run_config.generations != null) {
+          run_config.generations += this.generation;
+        }
+        if (run_config.iterations != null) {
+          run_config.iterations += this.iteration;
+        }
+        run_config = evo.util.extend(this.config.run_conditions, run_config);
+        while (this._checkRun(run_config)) {
+          this._runOnce();
         }
         return this.trigger('finish');
       };

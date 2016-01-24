@@ -120,12 +120,97 @@ describe "When running a simulation", ->
         expect(pool.generation).toBe(3)
 
 
-    it "Automatically stops when automated", ->
+
+describe "Run Configuration object", ->
+    it "Will run a specific amount of iterations", ->
         pool = evo.pool config
-        pool.on "run", (genes)-> -Math.abs(genes[0])
-        pool.run(1)
-        average = pool.average
+        pool.on "run", ->0.5
+        run_config =
+            iterations: 1234
 
-        pool.run()
+        pool.run run_config
+        expect(pool.iteration).toBe(1234)
 
-        expect(pool.average).toBeLessThan(average);
+    it "will run a specific amount of generations", ->
+        pool = evo.pool config
+        pool.on "run", ->0.5
+        run_config =
+            generations: 111
+
+        pool.run run_config
+        expect(pool.generation).toBe(111)
+
+    it "will stop when a specific max score is reached", ->
+        pool = evo.pool config
+        pool.on "run", (g)->g[0]
+        run_config =
+            score: 2.0
+
+        pool.run run_config
+        expect(pool.average).toBeGreaterThan(2.0)
+
+    it "will stop when a while function returns false", ->
+        pool = evo.pool config
+        pool.on "run", (g)->g[0]
+
+        i = 0
+        run_config =
+            while: -> i++ < 145
+
+        pool.run run_config
+        expect(i).toBe(146)
+
+    it "will autodetect when score is optimized", ->
+        pool = evo.pool config
+
+        pool.on "run", (genes)->
+            return -Math.abs(genes[0]);
+
+        run_config =
+            auto_stop: true
+            generations: 100
+
+        pool.run run_config
+        expect(pool.average).toBeLessThan(0.1)
+
+    it "will autodetect when score is not improving", ->
+        pool = evo.pool config
+
+        i = 0
+        pool.on "run", (genes)->
+            return i++
+
+        run_config =
+            auto_stop: true
+            generations: 100
+
+        pool.run run_config
+        expect(pool.generation).toBe(100)
+
+    it "Can call subsequent run calls for generations", ->
+        pool = evo.pool config
+
+        pool.on "run", (genes)->0.0
+
+        run_config =
+            generations: 100
+
+        pool.run run_config
+        expect(pool.generation).toBe(100)
+
+        pool.run run_config
+        expect(pool.generation).toBe(200)
+
+    it "Can call subsequent run calls for iterations", ->
+        pool = evo.pool config
+
+        pool.on "run", (genes)->0.0
+
+        run_config =
+            iterations: 100
+
+        pool.run run_config
+        expect(pool.iteration).toBe(100)
+
+        pool.run run_config
+        expect(pool.iteration).toBe(200)

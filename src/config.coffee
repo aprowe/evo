@@ -17,12 +17,6 @@ evo.config =
         ## The initial pool size
         size: 100
 
-        ## Maximum generation pool will run
-        max_generations: 100
-
-        ## Minumum Generations pool will run
-        min_generations: 50
-
         ## Ratios each generation will compromise
         ratios:
 
@@ -46,23 +40,23 @@ evo.config =
 
         ## TODO
         run_conditions:
+            ## Maximum generatios that will run
+            generations: 1000
+
             ## Iterations that run will run
             iterations: undefined
 
-            ## Maximum generatios that will run
-            generations: undefined
-
-            ## Maximum generatios that will run
-            max_generations: Infinity
-
             ## Minimum score to be reached by members
-            min_score: -Infinity
+            score: Infinity
 
-            ## Maximum score to be reached by members
-            max_score: Infinity
+            ## Boolean to check if a minumum is reached
+            auto_stop: false
+
+            ## Minumum generations to run for auto_stop
+            min_generations: 10
 
             ## Condition to be checked each time
-            while: ->true
+            while: undefined
 
         on_breed: undefined
 

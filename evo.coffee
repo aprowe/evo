@@ -43,15 +43,6 @@ root = if window? then window else this
             ## The initial pool size
             size: 100
 
-            ## The initial pool size
-            size: 100
-
-            ## Maximum generation pool will run
-            max_generations: 100
-
-            ## Minumum Generations pool will run
-            min_generations: 50
-
             ## Ratios each generation will compromise
             ratios:
 
@@ -75,13 +66,23 @@ root = if window? then window else this
 
             ## TODO
             run_conditions:
-                max_iterations: Infinity
-                max_generations: Infinity
+                ## Maximum generatios that will run
+                generations: 1000
 
-                min_score: -Infinity
-                max_score: Infinity
+                ## Iterations that run will run
+                iterations: undefined
 
-                while: ->true
+                ## Minimum score to be reached by members
+                score: Infinity
+
+                ## Boolean to check if a minumum is reached
+                auto_stop: false
+
+                ## Minumum generations to run for auto_stop
+                min_generations: 10
+
+                ## Condition to be checked each time
+                while: undefined
 
             on_breed: undefined
 
@@ -232,6 +233,9 @@ root = if window? then window else this
             ## Current generation of the pool
             @generation = 0
 
+            ## Current number of genes that have been tested
+            @iteration = 0
+
             ## List of genes waiting to be tested
             @genes = []
 
@@ -299,6 +303,8 @@ root = if window? then window else this
         # genes is either a genome or a object
         # containing the genes, i.e. a spawned object
         report: (genes, score=0)->
+            @iteration++
+
             ## If genes is an object
             if genes._evo?
                 score = genes._evo.score
@@ -309,33 +315,53 @@ root = if window? then window else this
                 genes: genes
                 score: score
 
+        _checkRun: (run_config)->
+            run = true
+
+            if run_config.generations?
+                run = run && @generation < run_config.generations
+
+            if run_config.iterations?
+                run = run && @iteration < run_config.iterations
+
+            if run_config.score?
+                run = run && @average < run_config.score
+
+            if run_config.while?
+                run = run && run_config.while.call(this)
+
+            if @_scoredGenes.length == 0 && run_config.auto_stop
+                run = run && !@_autoStop(run_config)
+
+            return run
+
+        _autoStop: (run_config)->
+            return false if @_history.length < run_config.min_generations
+            stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
+            mean =   evo.util.mean   @_history[@_history.length-@config.min_generations..@_history.length-2]
+            return Math.abs(@_history[@_history.length-1] - mean) > stddev*stddev
+
+
         ## Run a simulation while a condition returns false
-        run: (stop_fn)->
-            if typeof stop_fn is 'number'
-                for i in [1..stop_fn]
-                    @_runOnce()
+        run: (run_config={})->
+            if typeof run_config is 'number'
+                run_config =
+                    iterations: run_config
 
-            else if typeof stop_fn is 'function'
-                while stop_fn.call(this)
-                    @_runOnce()
+            else if typeof run_config is 'function'
+                run_config =
+                    while: run_config
 
-            else if typeof @config.on_stop is 'function'
-                while @trigger 'stop'
-                    @_runOnce()
+            if run_config.generations?
+                run_config.generations += @generation
 
-            else
-                @_history = [@average]
-                for i in [1..@config.max_generations * @config.size]
-                    @_runOnce()
-                    continue if i < @config.min_generations
-                    # console.log( "generation " + @generation)
-                    stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
-                    # console.log( "stddev: " + stddev)
-                    mean = evo.util.mean @_history[@_history.length-@config.min_generations..@_history.length-2]
-                    # console.log( "mean: " + mean)
-                    # console.log( "last: " + @_history[@_history.length-1])
-                    if Math.abs(@_history[@_history.length-1] - mean) < stddev*stddev
-                        break
+            if run_config.iterations?
+                run_config.iterations  += @iteration
+
+            run_config = evo.util.extend @config.run_conditions, run_config
+
+            while @_checkRun(run_config)
+                @_runOnce()
 
             @trigger 'finish'
 
