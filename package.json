@@ -1,8 +1,8 @@
 {
-  "name": "evo",
+  "name": "evo-js",
   "version": "0.2.0",
   "description": "Genetic Algorithm Calculator with ANN",
-  "main": "evo.coffee",
+  "main": "evo.js",
   "scripts": {
     "test": "grunt test"
   },
