@@ -43,6 +43,15 @@ root = if window? then window else this
             ## The initial pool size
             size: 100
 
+            ## The initial pool size
+            size: 100
+
+            ## Maximum generation pool will run
+            max_generations: 100
+
+            ## Minumum Generations pool will run
+            min_generations: 50
+
             ## Ratios each generation will compromise
             ratios:
 
@@ -64,13 +73,23 @@ root = if window? then window else this
                 ## The percentage of new genomes
                 fresh:  0.15
 
-            on_breed: ->
+            ## TODO
+            run_conditions:
+                max_iterations: Infinity
+                max_generations: Infinity
+
+                min_score: -Infinity
+                max_score: Infinity
+
+                while: ->true
+
+            on_breed: undefined
 
             on_member: undefined
 
-            on_run: ->
+            on_run: undefined
 
-            on_finish: ->
+            on_finish: undefined
 
         network:
             output_fn: 'tanh'
@@ -89,7 +108,7 @@ root = if window? then window else this
 
     ## Utility Functions
     evo.util =
-        
+
         random: (min = -1, max = 1)->
             (Math.random() * (max - min)) + min
 
@@ -99,7 +118,7 @@ root = if window? then window else this
         gaussian: (x,mu=0,sigma=1)->
             Math.exp -(mu-x)**2 * sigma
 
-        linear: (x, m=1, b=0)-> 
+        linear: (x, m=1, b=0)->
             (x + b) * m
 
         flatten: (x)->
@@ -161,16 +180,34 @@ root = if window? then window else this
         ## Normalizes the values of an object
         normalize: (obj)->
             ## Compute sum
-            sum = 0 
+            sum = 0
             sum += value for key, value of obj
-            
+
             ratios = {}
             for key, value of obj
                 value = 0 if not value
-                ratios[key] = value/sum 
+                ratios[key] = value/sum
 
             return ratios
 
+        ## Finds the mean of a set
+        mean: (data)->
+            if !data.length? or data.length == 0
+                throw "data must be a list of numbers"
+
+            sum = 0
+            N = data.length
+            sum += d for d in data
+            return sum/N
+
+        ## Finds the standard deviation of a data set
+        stddev: (data)->
+            mean = evo.util.mean(data)
+            N = data.length
+
+            sum = 0;
+            sum += (d - mean)*(d - mean) for d in data
+            return Math.sqrt(sum/N)
 
     ## Base Class
     class Base
@@ -198,7 +235,6 @@ root = if window? then window else this
             ## List of genes waiting to be tested
             @genes = []
 
-
             ## Initialize pool with fresh genes
             @genes.push @_freshGenes() for i in [1..@config.size]
 
@@ -210,6 +246,9 @@ root = if window? then window else this
 
             ## List of gene objects that have been tested
             @_scoredGenes = []
+
+            ## List of previous scores
+            @_history = []
 
         #######################
         ## Public Methods
@@ -241,17 +280,20 @@ root = if window? then window else this
         ## Retrieve the next genome in the list,
         # Breeding a generation if necessary
         nextGenes: ->
+            genes = @genes.pop()
+
             if @genes.length == 0
                 if @_scoredGenes.length > 0
                     @_generate()
                 else
-                    return @_freshGenes()
+                    throw "Gene pool is empty"
 
-            @genes.pop()
+            return genes
 
         ##Retrieve the next constructed member
         nextMember: ->
-          @constructMember @nextGenes()
+            return unless @config.on_member?
+            @constructMember @nextGenes()
 
         ## Reports back genes to the pool
         # genes is either a genome or a object
@@ -279,9 +321,21 @@ root = if window? then window else this
 
             else if typeof @config.on_stop is 'function'
                 while @trigger 'stop'
-                    _runOnce()
+                    @_runOnce()
 
-            else throw "Stopping number or function not supplied"
+            else
+                @_history = [@average]
+                for i in [1..@config.max_generations * @config.size]
+                    @_runOnce()
+                    continue if i < @config.min_generations
+                    # console.log( "generation " + @generation)
+                    stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
+                    # console.log( "stddev: " + stddev)
+                    mean = evo.util.mean @_history[@_history.length-@config.min_generations..@_history.length-2]
+                    # console.log( "mean: " + mean)
+                    # console.log( "last: " + @_history[@_history.length-1])
+                    if Math.abs(@_history[@_history.length-1] - mean) < stddev*stddev
+                        break
 
             @trigger 'finish'
 
@@ -358,12 +412,6 @@ root = if window? then window else this
           else
             throw "score was not returned in run function"
 
-        ## Average the score of a list of scored genes
-        _mean: (pool)->
-            avg = 0
-            avg += a.score for a in pool
-            avg /= pool.length
-
         ## Calculates the next generation based on the _scoredGenes,
         # And inserts it into the pool object
         _generate: ()->
@@ -375,7 +423,9 @@ root = if window? then window else this
             @genes = []
 
             ## Store the average
-            @average = @_mean @_scoredGenes
+            scores = (a.score for a in @_scoredGenes)
+            @average = evo.util.mean scores
+            @_history.push @average
 
             ## Sort the _scoredGenes by score
             @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score

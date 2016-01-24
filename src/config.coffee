@@ -17,6 +17,12 @@ evo.config =
         ## The initial pool size
         size: 100
 
+        ## Maximum generation pool will run
+        max_generations: 100
+
+        ## Minumum Generations pool will run
+        min_generations: 50
+
         ## Ratios each generation will compromise
         ratios:
 
@@ -38,13 +44,33 @@ evo.config =
             ## The percentage of new genomes
             fresh:  0.15
 
-        on_breed: ->
+        ## TODO
+        run_conditions:
+            ## Iterations that run will run
+            iterations: undefined
+
+            ## Maximum generatios that will run
+            generations: undefined
+
+            ## Maximum generatios that will run
+            max_generations: Infinity
+
+            ## Minimum score to be reached by members
+            min_score: -Infinity
+
+            ## Maximum score to be reached by members
+            max_score: Infinity
+
+            ## Condition to be checked each time
+            while: ->true
+
+        on_breed: undefined
 
         on_member: undefined
 
-        on_run: ->
+        on_run: undefined
 
-        on_finish: ->
+        on_finish: undefined
 
     network:
         output_fn: 'tanh'

@@ -50,7 +50,7 @@
   })();
 
   describe("Line fitting test", function() {
-    return it("Trains a pool that can solve the XOR problem", function() {
+    return it("Solves a line fitting problem", function() {
       var evalGenes, pool;
       evalGenes = function(genes) {
         var dist, j, len, p, poly;
@@ -72,13 +72,9 @@
       pool = evo.pool({
         mutate_amount: 10.0
       });
-      pool.on('run', function(genes) {
+      return pool.on('run', function(genes) {
         return evalGenes(genes);
       });
-      pool.on('breed', function() {
-        return console.log(this.average);
-      });
-      return pool.run(10000);
     });
   });
 
@@ -198,12 +194,78 @@
     it("Creates The right number of genes", function() {
       var pool;
       pool = evo.pool(config);
+      pool.on('run', function() {
+        return 0.5;
+      });
+      expect(pool.genes.length).toBe(size);
+      pool.run(1);
+      expect(pool.genes.length).toBe(size - 1);
+      pool.run(size);
       return expect(pool.genes.length).toBe(size);
     });
     return it("Gene sets have the right number of genes", function() {
       var pool;
       pool = evo.pool(config);
       return expect(pool.genes[0].length).toBe(n_genes);
+    });
+  });
+
+  describe("When running a simulation", function() {
+    it("Keeps a history of previous averages", function() {
+      var pool;
+      pool = evo.pool(config);
+      pool.on("run", function(genes) {
+        return 0.5;
+      });
+      pool.run(size);
+      expect(pool.average).toBe(0.5);
+      expect(pool._history[0]).toBe(0.5);
+      pool.run(size * 9);
+      return expect(pool._history.length).toBe(pool.generation);
+    });
+    it("increments generation count after all members tested", function() {
+      var pool;
+      pool = evo.pool(config);
+      pool.on("run", function(genes) {
+        return 0.5;
+      });
+      expect(pool.generation).toBe(0);
+      pool.run(size);
+      expect(pool.generation).toBe(1);
+      pool.run(size + 1);
+      expect(pool.generation).toBe(2);
+      pool.run(size + 1);
+      return expect(pool.generation).toBe(3);
+    });
+    return it("Automatically stops when automated", function() {
+      var average, pool;
+      pool = evo.pool(config);
+      pool.on("run", function(genes) {
+        return -Math.abs(genes[0]);
+      });
+      pool.run(1);
+      average = pool.average;
+      pool.run();
+      return expect(pool.average).toBeLessThan(average);
+    });
+  });
+
+}).call(this);
+
+(function() {
+  describe("Utility Functions", function() {
+    var data;
+    data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    it("Can find the mean of a data set", function() {
+      var mean;
+      mean = evo.util.mean(data);
+      return expect(mean).toBe(5);
+    });
+    return it("Can find the deviance of a data set", function() {
+      var std;
+      std = evo.util.stddev(data);
+      expect(std).toBeGreaterThan(3.16);
+      return expect(std).toBeLessThan(3.17);
     });
   });
 

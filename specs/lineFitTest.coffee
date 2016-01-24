@@ -18,6 +18,3 @@ describe "Line fitting test", ->
         pool = evo.pool({mutate_amount:10.0})
         pool.on 'run', (genes)->
           return evalGenes(genes)
-
-        pool.on 'breed', ->
-        pool.run(10000);

@@ -12,7 +12,6 @@ class Pool extends Base
         ## List of genes waiting to be tested
         @genes = []
 
-
         ## Initialize pool with fresh genes
         @genes.push @_freshGenes() for i in [1..@config.size]
 
@@ -24,6 +23,9 @@ class Pool extends Base
 
         ## List of gene objects that have been tested
         @_scoredGenes = []
+
+        ## List of previous scores
+        @_history = []
 
     #######################
     ## Public Methods
@@ -55,17 +57,20 @@ class Pool extends Base
     ## Retrieve the next genome in the list,
     # Breeding a generation if necessary
     nextGenes: ->
+        genes = @genes.pop()
+
         if @genes.length == 0
             if @_scoredGenes.length > 0
                 @_generate()
             else
-                return @_freshGenes()
+                throw "Gene pool is empty"
 
-        @genes.pop()
+        return genes
 
     ##Retrieve the next constructed member
     nextMember: ->
-      @constructMember @nextGenes()
+        return unless @config.on_member?
+        @constructMember @nextGenes()
 
     ## Reports back genes to the pool
     # genes is either a genome or a object
@@ -93,9 +98,21 @@ class Pool extends Base
 
         else if typeof @config.on_stop is 'function'
             while @trigger 'stop'
-                _runOnce()
+                @_runOnce()
 
-        else throw "Stopping number or function not supplied"
+        else
+            @_history = [@average]
+            for i in [1..@config.max_generations * @config.size]
+                @_runOnce()
+                continue if i < @config.min_generations
+                # console.log( "generation " + @generation)
+                stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
+                # console.log( "stddev: " + stddev)
+                mean = evo.util.mean @_history[@_history.length-@config.min_generations..@_history.length-2]
+                # console.log( "mean: " + mean)
+                # console.log( "last: " + @_history[@_history.length-1])
+                if Math.abs(@_history[@_history.length-1] - mean) < stddev*stddev
+                    break
 
         @trigger 'finish'
 
@@ -172,12 +189,6 @@ class Pool extends Base
       else
         throw "score was not returned in run function"
 
-    ## Average the score of a list of scored genes
-    _mean: (pool)->
-        avg = 0
-        avg += a.score for a in pool
-        avg /= pool.length
-
     ## Calculates the next generation based on the _scoredGenes,
     # And inserts it into the pool object
     _generate: ()->
@@ -189,7 +200,9 @@ class Pool extends Base
         @genes = []
 
         ## Store the average
-        @average = @_mean @_scoredGenes
+        scores = (a.score for a in @_scoredGenes)
+        @average = evo.util.mean scores
+        @_history.push @average
 
         ## Sort the _scoredGenes by score
         @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score

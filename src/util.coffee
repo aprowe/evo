@@ -1,6 +1,6 @@
 ## Utility Functions
 evo.util =
-    
+
     random: (min = -1, max = 1)->
         (Math.random() * (max - min)) + min
 
@@ -10,7 +10,7 @@ evo.util =
     gaussian: (x,mu=0,sigma=1)->
         Math.exp -(mu-x)**2 * sigma
 
-    linear: (x, m=1, b=0)-> 
+    linear: (x, m=1, b=0)->
         (x + b) * m
 
     flatten: (x)->
@@ -72,13 +72,31 @@ evo.util =
     ## Normalizes the values of an object
     normalize: (obj)->
         ## Compute sum
-        sum = 0 
+        sum = 0
         sum += value for key, value of obj
-        
+
         ratios = {}
         for key, value of obj
             value = 0 if not value
-            ratios[key] = value/sum 
+            ratios[key] = value/sum
 
         return ratios
 
+    ## Finds the mean of a set
+    mean: (data)->
+        if !data.length? or data.length == 0
+            throw "data must be a list of numbers"
+
+        sum = 0
+        N = data.length
+        sum += d for d in data
+        return sum/N
+
+    ## Finds the standard deviation of a data set
+    stddev: (data)->
+        mean = evo.util.mean(data)
+        N = data.length
+
+        sum = 0;
+        sum += (d - mean)*(d - mean) for d in data
+        return Math.sqrt(sum/N)

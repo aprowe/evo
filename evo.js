@@ -31,6 +31,9 @@
         mutate_rate: 0.05,
         mutate_amount: 1.0,
         size: 100,
+        size: 100,
+        max_generations: 100,
+        min_generations: 50,
         ratios: {
           top: 0.25,
           mutate: 0.25,
@@ -39,10 +42,19 @@
           meld: 0.00,
           fresh: 0.15
         },
-        on_breed: function() {},
+        run_conditions: {
+          max_iterations: Infinity,
+          max_generations: Infinity,
+          min_score: -Infinity,
+          max_score: Infinity,
+          "while": function() {
+            return true;
+          }
+        },
+        on_breed: void 0,
         on_member: void 0,
-        on_run: function() {},
-        on_finish: function() {}
+        on_run: void 0,
+        on_finish: void 0
       },
       network: {
         output_fn: 'tanh',
@@ -178,6 +190,30 @@
           ratios[key] = value / sum;
         }
         return ratios;
+      },
+      mean: function(data) {
+        var N, d, l, len, sum;
+        if ((data.length == null) || data.length === 0) {
+          throw "data must be a list of numbers";
+        }
+        sum = 0;
+        N = data.length;
+        for (l = 0, len = data.length; l < len; l++) {
+          d = data[l];
+          sum += d;
+        }
+        return sum / N;
+      },
+      stddev: function(data) {
+        var N, d, l, len, mean, sum;
+        mean = evo.util.mean(data);
+        N = data.length;
+        sum = 0;
+        for (l = 0, len = data.length; l < len; l++) {
+          d = data[l];
+          sum += (d - mean) * (d - mean);
+        }
+        return Math.sqrt(sum / N);
       }
     };
     Base = (function() {
@@ -220,6 +256,7 @@
         this.average = 0;
         this._prevGenes = this.genes.slice(0);
         this._scoredGenes = [];
+        this._history = [];
       }
 
       Pool.prototype.constructMember = function(genes) {
@@ -243,17 +280,22 @@
       };
 
       Pool.prototype.nextGenes = function() {
+        var genes;
+        genes = this.genes.pop();
         if (this.genes.length === 0) {
           if (this._scoredGenes.length > 0) {
             this._generate();
           } else {
-            return this._freshGenes();
+            throw "Gene pool is empty";
           }
         }
-        return this.genes.pop();
+        return genes;
       };
 
       Pool.prototype.nextMember = function() {
+        if (this.config.on_member == null) {
+          return;
+        }
         return this.constructMember(this.nextGenes());
       };
 
@@ -272,7 +314,7 @@
       };
 
       Pool.prototype.run = function(stop_fn) {
-        var i, l, ref;
+        var i, l, mean, n, ref, ref1, stddev;
         if (typeof stop_fn === 'number') {
           for (i = l = 1, ref = stop_fn; 1 <= ref ? l <= ref : l >= ref; i = 1 <= ref ? ++l : --l) {
             this._runOnce();
@@ -283,10 +325,21 @@
           }
         } else if (typeof this.config.on_stop === 'function') {
           while (this.trigger('stop')) {
-            _runOnce();
+            this._runOnce();
           }
         } else {
-          throw "Stopping number or function not supplied";
+          this._history = [this.average];
+          for (i = n = 1, ref1 = this.config.max_generations * this.config.size; 1 <= ref1 ? n <= ref1 : n >= ref1; i = 1 <= ref1 ? ++n : --n) {
+            this._runOnce();
+            if (i < this.config.min_generations) {
+              continue;
+            }
+            stddev = evo.util.stddev(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
+            mean = evo.util.mean(this._history.slice(this._history.length - this.config.min_generations, +(this._history.length - 2) + 1 || 9e9));
+            if (Math.abs(this._history[this._history.length - 1] - mean) < stddev * stddev) {
+              break;
+            }
+          }
         }
         return this.trigger('finish');
       };
@@ -366,21 +419,22 @@
         }
       };
 
-      Pool.prototype._mean = function(pool) {
-        var a, avg, l, len;
-        avg = 0;
-        for (l = 0, len = pool.length; l < len; l++) {
-          a = pool[l];
-          avg += a.score;
-        }
-        return avg /= pool.length;
-      };
-
       Pool.prototype._generate = function() {
-        var a, g1, g2, i, l, len, n, p, q, r, ratios, ref, ref1, ref2, ref3, size, top_pool;
+        var a, g1, g2, i, l, len, n, p, q, r, ratios, ref, ref1, ref2, ref3, scores, size, top_pool;
         ratios = evo.util.normalize(this.config.ratios);
         this.genes = [];
-        this.average = this._mean(this._scoredGenes);
+        scores = (function() {
+          var l, len, ref, results;
+          ref = this._scoredGenes;
+          results = [];
+          for (l = 0, len = ref.length; l < len; l++) {
+            a = ref[l];
+            results.push(a.score);
+          }
+          return results;
+        }).call(this);
+        this.average = evo.util.mean(scores);
+        this._history.push(this.average);
         this._scoredGenes = this._scoredGenes.sort(function(a, b) {
           return a.score - b.score;
         });

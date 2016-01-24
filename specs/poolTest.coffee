@@ -78,9 +78,54 @@ describe 'When calling nextGenes', ->
 
 describe 'Pool Population', ->
   	it "Creates The right number of genes", ->
-        pool = evo.pool(config);expect(pool.genes.length).toBe size
+        pool = evo.pool(config)
+        pool.on 'run', ->0.5
+        expect(pool.genes.length).toBe size
+
+        pool.run(1)
+        expect(pool.genes.length).toBe size-1
+
+        pool.run(size)
+        expect(pool.genes.length).toBe size
 
     it "Gene sets have the right number of genes", ->
-        pool = evo.pool(config);expect(pool.genes[0].length).toBe n_genes
+        pool = evo.pool(config)
+        expect(pool.genes[0].length).toBe n_genes
 
-describe "When running a simulation"
+
+
+describe "When running a simulation", ->
+    it "Keeps a history of previous averages", ->
+        pool = evo.pool config
+        pool.on "run", (genes)-> 0.5
+        pool.run(size)
+        expect(pool.average).toBe(0.5)
+        expect(pool._history[0]).toBe(0.5)
+        pool.run(size * 9)
+        expect(pool._history.length).toBe(pool.generation)
+
+    it "increments generation count after all members tested", ->
+        pool = evo.pool config
+        pool.on "run", (genes)-> 0.5
+
+        expect(pool.generation).toBe(0)
+
+        pool.run size
+        expect(pool.generation).toBe(1)
+
+        pool.run size+1 ## TODO Why is it like this
+        expect(pool.generation).toBe(2)
+
+        pool.run size+1
+        expect(pool.generation).toBe(3)
+
+
+    it "Automatically stops when automated", ->
+        pool = evo.pool config
+        pool.on "run", (genes)-> -Math.abs(genes[0])
+        pool.run(1)
+        average = pool.average
+
+        pool.run()
+
+        expect(pool.average).toBeLessThan(average);
