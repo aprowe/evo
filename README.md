@@ -1,11 +1,10 @@
-  Evo
+ evojs
 =========
-
-Evo is a genetic and evolutionary algorithm tool, making it easy to incorporate evolutionary algorithms in your JavaScript.  
+evojs is a genetic and evolutionary algorithm tool, making it easy to incorporate evolutionary algorithms in your JavaScript.  
 
 Installation
 -------------
-Evo is compatible with both require.js and node.
+evojs is compatible with both require.js and node.
 
 
 Basic Usage
