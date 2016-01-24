@@ -33,10 +33,10 @@ evo.config =
             random: 0.10
 
             ## The percentage made from melding two parent
-            meld:   0.00
+            average:   0.05
 
             ## The percentage of new genomes
-            fresh:  0.15
+            fresh:  0.10
 
         ## TODO
         run_conditions:
