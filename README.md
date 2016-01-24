@@ -5,6 +5,7 @@ evoJS is a genetic and evolutionary algorithm tool, making it easy to incorporat
 Installation
 -------------
 To install run `npm install evo-js`.
+
 To run on a browser, include `evo.min.js` in your scripts. 
 
 Basic Usage
