@@ -1,6 +1,6 @@
 {
   "name": "evo",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Genetic Algorithm Calculator with ANN",
   "main": "evo.coffee",
   "scripts": {
@@ -17,7 +17,7 @@
     "network",
     "cppn"
   ],
-  "author": "Alex Rowe",
+  "author": "Alexander Rowe <alexrowe707@gmail.com> (http://alexrowe.net)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/aprowe/evojs/issues"
