@@ -1,650 +1,649 @@
 ##
-# evo.js v0.1.1
-# Genetic Algorithm Calculator with ANN
-# Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
+# evo.js v0.2.2
+# Evolutionary Algorithm Tool wrapped with ANN
+# Copyright (c) 2016 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
 ##
 
 root = if window? then window else this
 
-((factory)-> 
+((factory)->
 
-    # Node
-    if typeof exports == 'object'
-        module.exports = factory.call root 
+  # Node
+  if typeof exports == 'object'
+    module.exports = factory.call root
 
-    # AMD
-    else if typeof define == 'function' and define.amd 
-        define -> factory.call root
+  # AMD
+  else if typeof define == 'function' and define.amd
+    define -> factory.call root
 
-    # Browser globals (root is window)
-    else 
-        root.evo = factory.call root
+  # Browser globals (root is window)
+  else
+    root.evo = factory.call root
 
 )(->
 
-    evo = {}
-    ## Default Configuration Object
-    evo.config =
-        pool:
+  evo = {}
 
-            ## Number of Genes in a genetic object
-            genes: 200
+  ## Default Configuration Object
+  evo.config =
+    pool:
 
-            ## The frequency of "twists" in two parents genes
-            cross_rate: 0.05
+      ## Number of Genes in a genetic object
+      genes: 200
 
-            ## The frequency of mutations in a parent gene
-            mutate_rate: 0.05
+      ## The frequency of "twists" in two parents genes
+      cross_rate: 0.05
 
-            ## The amount a mutatated gene can deviate from its original value
-            mutate_amount: 1.0
+      ## The frequency of mutations in a parent gene
+      mutate_rate: 0.05
 
-            ## The initial pool size
-            size: 100
+      ## The amount a mutatated gene can deviate from its original value
+      mutate_amount: 1.0
 
-            ## Ratios each generation will compromise
-            ratios:
+      ## The initial pool size
+      size: 100
 
-                ## The "surviving" percentage from the last generation
-                top:    0.25
+      ## Ratios each generation will compromise
+      ratios:
 
-                ## The mutating percentage
-                mutate: 0.25
+        ## The "surviving" percentage from the last generation
+        top:    0.25
 
-                ## The percentage created from crossing parents
-                cross:  0.25
+        ## The mutating percentage
+        mutate: 0.25
 
-                ## The percentage random survivors
-                random: 0.10
+        ## The percentage created from crossing parents
+        cross:  0.25
 
-                ## The percentage made from melding two parent
-                meld:   0.00
+        ## The percentage random survivors
+        random: 0.10
 
-                ## The percentage of new genomes
-                fresh:  0.15
+        ## The percentage made from melding two parent
+        average:   0.05
 
-            ## TODO
-            run_conditions:
-                ## Maximum generatios that will run
-                generations: 1000
+        ## The percentage of new genomes
+        fresh:  0.10
 
-                ## Iterations that run will run
-                iterations: undefined
+      ## TODO
+      run_conditions:
+        ## Maximum generatios that will run
+        generations: 1000
 
-                ## Minimum score to be reached by members
-                score: Infinity
+        ## Iterations that run will run
+        iterations: undefined
 
-                ## Boolean to check if a minumum is reached
-                auto_stop: false
+        ## Minimum score to be reached by members
+        score: Infinity
 
-                ## Minumum generations to run for auto_stop
-                min_generations: 10
+        ## Boolean to check if a minumum is reached
+        auto_stop: false
 
-                ## Condition to be checked each time
-                while: undefined
+        ## Minumum generations to run for auto_stop
+        min_generations: 10
 
-            on_breed: undefined
+        ## Condition to be checked each time
+        while: undefined
 
-            on_member: undefined
+      on_breed: undefined
 
-            on_run: undefined
+      on_member: undefined
 
-            on_finish: undefined
+      on_run: undefined
 
-        network:
-            output_fn: 'tanh'
+      on_finish: undefined
 
-            output_nodes: 2
+    network:
+      output_fn: 'tanh'
 
-            hidden_layers: 2
+      output_nodes: 2
 
-            hidden_nodes: 2
+      hidden_layers: 2
 
-            input_nodes: 2
+      hidden_nodes: 2
 
-    ## Configuration function to set defaults
-    evo.configure = (config)->
-        evo.config = evo.util.extend evo.config, config
+      input_nodes: 2
 
-    ## Utility Functions
-    evo.util =
+  ## Configuration function to set defaults
+  evo.configure = (config)->
+    evo.config = evo.util.extend evo.config, config
 
-        random: (min = -1, max = 1)->
-            (Math.random() * (max - min)) + min
+  ## Utility Functions
+  evo.util =
 
-        sin: (x, freq=1, phase=0)->
-            Math.sin x * freq * 6.2832 + phase
+    random: (min = -1, max = 1)->
+      (Math.random() * (max - min)) + min
 
-        gaussian: (x,mu=0,sigma=1)->
-            Math.exp -(mu-x)**2 * sigma
+    sin: (x, freq=1, phase=0)->
+      Math.sin x * freq * 6.2832 + phase
 
-        linear: (x, m=1, b=0)->
-            (x + b) * m
+    gaussian: (x,mu=0,sigma=1)->
+      Math.exp -(mu-x)**2 * sigma
 
-        flatten: (x)->
-            return 1 if x > 1
-            return -1 if x < -1
-            return x
-
-        tanh: (x)->
-            if -3 > x or x > 3
-                return evo.util.flatten x
-            else
-                x1 = Math.exp x
-                x2 = Math.exp -x
-                return (x1-x2)/(x1+x2)
-
-        step: (x)->
-            return -1 if (x < 0)
-            return  1
-
-        ## Pick a random element of an array
-        sample: (array)->
-            array[Math.floor(Math.random() * array.length)]
-
-        ## Shuffle an array
-        # Idea taken from underscore
-        shuffle: (array)->
-            length = array.length
-            shuffled = Array length
-            for index in [0..length-1]
-                rand = Math.floor(Math.random() * index)
-                shuffled[index] = shuffled[rand] if rand != index
-                shuffled[rand] = array[index]
-
-            return shuffled
-
-        ## clone an object
-        clone: (obj)->
-            return obj if null == obj or "object" != typeof obj
-            copy = obj.constructor()
-            for attr of obj
-                copy[attr] = obj[attr] if obj.hasOwnProperty(attr)
-
-            return copy
-
-        ## Deep extend of an object
-        extend: (destination, source)->
-            destination = evo.util.clone(destination)
-            return destination unless source?
-
-            for property of source
-                if source[property] and source[property].constructor and source[property].constructor == Object
-                    destination[property] = destination[property] or {}
-                    destination[property] = arguments.callee(destination[property], source[property])
-                else
-                    destination[property] = source[property]
+    linear: (x, m=1, b=0)->
+      (x + b) * m
 
-            return destination
+    flatten: (x)->
+      return 1 if x > 1
+      return -1 if x < -1
+      return x
+
+    tanh: (x)->
+      if -3 > x or x > 3
+        return evo.util.flatten x
+      else
+        x1 = Math.exp x
+        x2 = Math.exp -x
+        return (x1-x2)/(x1+x2)
+
+    step: (x)->
+      return -1 if (x < 0)
+      return  1
+
+    ## Pick a random element of an array
+    sample: (array)->
+      array[Math.floor(Math.random() * array.length)]
+
+    ## Shuffle an array
+    # Idea taken from underscore
+    shuffle: (array)->
+      length = array.length
+      shuffled = Array length
+      for index in [0..length-1]
+        rand = Math.floor(Math.random() * index)
+        shuffled[index] = shuffled[rand] if rand != index
+        shuffled[rand] = array[index]
+
+      return shuffled
+
+    ## clone an object
+    clone: (obj)->
+      return obj if null == obj or "object" != typeof obj
+      copy = obj.constructor()
+      for attr of obj
+        copy[attr] = obj[attr] if obj.hasOwnProperty(attr)
+
+      return copy
+
+    ## Deep extend of an object
+    extend: (destination, source)->
+      destination = evo.util.clone(destination)
+      return destination unless source?
+
+      for property of source
+        if source[property] and source[property].constructor and source[property].constructor == Object
+          destination[property] = destination[property] or {}
+          destination[property] = arguments.callee(destination[property], source[property])
+        else
+          destination[property] = source[property]
+
+      return destination
+
+    ## Normalizes the values of an object
+    normalize: (obj)->
+      ## Compute sum
+      sum = 0
+      sum += value for key, value of obj
+
+      ratios = {}
+      for key, value of obj
+        value = 0 if not value
+        ratios[key] = value/sum
+
+      return ratios
+
+    ## Finds the mean of a set
+    mean: (data)->
+      if !data.length? or data.length == 0
+        throw "data must be a list of numbers"
+
+      sum = 0
+      N = data.length
+      sum += d for d in data
+      return sum/N
+
+    ## Finds the standard deviation of a data set
+    stddev: (data)->
+      mean = evo.util.mean(data)
+      N = data.length
+
+      sum = 0;
+      sum += (d - mean)*(d - mean) for d in data
+      return Math.sqrt(sum/N)
+
+  ## Base Class
+  class Base
+    config: {}
+
+    on: (name, fn)->
+      @config['on_' + name] = fn
+      return this
+
+    trigger: (name, args=null) ->
+      @config['on_'+name].call(this, args) if @config['on_' + name]?
+
+  ## Pool Class
+  evo.pool = (config)->
+    config = evo.util.extend evo.config.pool, config
+    return new Pool(config)
+
+  class Pool extends Base
+    constructor: (@config)->
+
+      ## Current generation of the pool
+      @generation = 0
+
+      ## Current number of genes that have been tested
+      @iteration = 0
 
-        ## Normalizes the values of an object
-        normalize: (obj)->
-            ## Compute sum
-            sum = 0
-            sum += value for key, value of obj
+      ## List of genes waiting to be tested
+      @genes = []
 
-            ratios = {}
-            for key, value of obj
-                value = 0 if not value
-                ratios[key] = value/sum
+      ## Initialize pool with fresh genes
+      @genes.push @_freshGenes() for i in [1..@config.size]
 
-            return ratios
+      ## Keep track of the current average
+      @average = 0
 
-        ## Finds the mean of a set
-        mean: (data)->
-            if !data.length? or data.length == 0
-                throw "data must be a list of numbers"
+      ## Object of the last pool
+      @_prevGenes = @genes[..]
 
-            sum = 0
-            N = data.length
-            sum += d for d in data
-            return sum/N
+      ## List of gene objects that have been tested
+      @_scoredGenes = []
 
-        ## Finds the standard deviation of a data set
-        stddev: (data)->
-            mean = evo.util.mean(data)
-            N = data.length
+      ## List of previous scores
+      @_history = []
 
-            sum = 0;
-            sum += (d - mean)*(d - mean) for d in data
-            return Math.sqrt(sum/N)
-
-    ## Base Class
-    class Base
-        config: {}
-
-        on: (name, fn)->
-            @config['on_' + name] = fn
-            return this
-
-        trigger: (name, args=null) ->
-            @config['on_'+name].call(this, args) if @config['on_' + name]?
-
+    #######################
+    ## Public Methods
+    #######################
 
-    ## Pool Class
-    evo.pool = (config)->
-        config = evo.util.extend evo.config.pool, config
-        return new Pool(config)
+    ## Construct a Member object
+    constructMember: (genes=null)->
 
-    class Pool extends Base
-        constructor: (@config)->
+      ## Start with a user specified object
+      member = @trigger 'member', genes
 
-            ## Current generation of the pool
-            @generation = 0
+      #return null if no
+      return null if not member?
 
-            ## Current number of genes that have been tested
-            @iteration = 0
+      ## Add the evo object
+      member._evo = {}
 
-            ## List of genes waiting to be tested
-            @genes = []
+      ## Add the genes object
+      member._evo.genes = genes
 
-            ## Initialize pool with fresh genes
-            @genes.push @_freshGenes() for i in [1..@config.size]
+      ## Initialize score
+      member._evo.score = 0
 
-            ## Keep track of the current average
-            @average = 0
+      ## Give it a pool report function
+      member._evo.report = => @report member
 
-            ## Object of the last pool
-            @_prevGenes = @genes[..]
+      return member
 
-            ## List of gene objects that have been tested
-            @_scoredGenes = []
+    ## Retrieve the next genome in the list,
+    # Breeding a generation if necessary
+    nextGenes: ->
+      genes = @genes.pop()
 
-            ## List of previous scores
-            @_history = []
+      if @genes.length == 0
+        if @_scoredGenes.length > 0
+          @_generate()
+        else
+          throw "Gene pool is empty"
 
-        #######################
-        ## Public Methods
-        #######################
+      return genes
 
-        ## Construct a Member object
-        constructMember: (genes=null)->
+    ##Retrieve the next constructed member
+    nextMember: ->
+      return unless @config.on_member?
+      @constructMember @nextGenes()
 
-            ## Start with a user specified object
-            member = @trigger 'member', genes
+    ## Reports back genes to the pool
+    # genes is either a genome or a object
+    # containing the genes, i.e. a spawned object
+    report: (genes, score=0)->
+      @iteration++
 
-            #return null if no
-            return null if not member?
+      ## If genes is an object
+      if genes._evo?
+        score = genes._evo.score
+        genes = genes._evo.genes
 
-            ## Add the evo object
-            member._evo = {}
+      ## Push a simple object to the _scoredGenes
+      @_scoredGenes.push
+        genes: genes
+        score: score
 
-            ## Add the genes object
-            member._evo.genes = genes
+    _checkRun: (run_config)->
+      run = true
 
-            ## Initialize score
-            member._evo.score = 0
+      if run_config.generations?
+        run = run && @generation < run_config.generations
 
-            ## Give it a pool report function
-            member._evo.report = => @report member
+      if run_config.iterations?
+        run = run && @iteration < run_config.iterations
 
-            return member
+      if run_config.score?
+        run = run && @average < run_config.score
 
-        ## Retrieve the next genome in the list,
-        # Breeding a generation if necessary
-        nextGenes: ->
-            genes = @genes.pop()
+      if run_config.while?
+        run = run && run_config.while.call(this)
 
-            if @genes.length == 0
-                if @_scoredGenes.length > 0
-                    @_generate()
-                else
-                    throw "Gene pool is empty"
+      if @_scoredGenes.length == 0 && run_config.auto_stop
+        run = run && !@_autoStop(run_config)
 
-            return genes
+      return run
 
-        ##Retrieve the next constructed member
-        nextMember: ->
-            return unless @config.on_member?
-            @constructMember @nextGenes()
+    _autoStop: (run_config)->
+      return false if @_history.length < run_config.min_generations
+      stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
+      mean =   evo.util.mean   @_history[@_history.length-@config.min_generations..@_history.length-2]
+      return Math.abs(@_history[@_history.length-1] - mean) > stddev*stddev
 
-        ## Reports back genes to the pool
-        # genes is either a genome or a object
-        # containing the genes, i.e. a spawned object
-        report: (genes, score=0)->
-            @iteration++
 
-            ## If genes is an object
-            if genes._evo?
-                score = genes._evo.score
-                genes = genes._evo.genes
+    ## Run a simulation while a condition returns false
+    run: (run_config={})->
+      if typeof run_config is 'number'
+        run_config =
+          iterations: run_config
 
-            ## Push a simple object to the _scoredGenes
-            @_scoredGenes.push
-                genes: genes
-                score: score
+      else if typeof run_config is 'function'
+        run_config =
+          while: run_config
 
-        _checkRun: (run_config)->
-            run = true
+      if run_config.generations?
+        run_config.generations += @generation
 
-            if run_config.generations?
-                run = run && @generation < run_config.generations
+      if run_config.iterations?
+        run_config.iterations  += @iteration
 
-            if run_config.iterations?
-                run = run && @iteration < run_config.iterations
+      run_config = evo.util.extend @config.run_conditions, run_config
 
-            if run_config.score?
-                run = run && @average < run_config.score
+      while @_checkRun(run_config)
+        @_runOnce()
 
-            if run_config.while?
-                run = run && run_config.while.call(this)
+      @trigger 'finish'
 
-            if @_scoredGenes.length == 0 && run_config.auto_stop
-                run = run && !@_autoStop(run_config)
+    ## Return the best of the last generation bred
+    bestGenes: (number)->
+      return @_prevGenes[0] if not number?
+      return @_prevGenes[0..number-1]
 
-            return run
+    ## Load genes into the pool
+    loadGenes: (genes)->
 
-        _autoStop: (run_config)->
-            return false if @_history.length < run_config.min_generations
-            stddev = evo.util.stddev @_history[@_history.length-@config.min_generations..@_history.length-2]
-            mean =   evo.util.mean   @_history[@_history.length-@config.min_generations..@_history.length-2]
-            return Math.abs(@_history[@_history.length-1] - mean) > stddev*stddev
+      ## Load genes into the pool
+      @genes = genes[..]
 
+      ## Clear the scored Genes
+      @_scoredGenes = []
 
-        ## Run a simulation while a condition returns false
-        run: (run_config={})->
-            if typeof run_config is 'number'
-                run_config =
-                    iterations: run_config
+    #######################
+    ## Private Methods
+    #######################
 
-            else if typeof run_config is 'function'
-                run_config =
-                    while: run_config
+    ## -------------------------------
+    ## Methods for generating genomes
+    ## -------------------------------
 
-            if run_config.generations?
-                run_config.generations += @generation
+    ## Create a fresh random set of genes
+    _freshGenes: -> (evo.util.random() * @config.mutate_amount for i in [1..@config.genes])
 
-            if run_config.iterations?
-                run_config.iterations  += @iteration
+    ## Clone a genome gene for gene
+    _cloneGenes: (genes) -> genes[..]
 
-            run_config = evo.util.extend @config.run_conditions, run_config
+    ## Clone a genome with the chance for muations
+    _mutateGenes: (genes) ->
+      new_genes = []
 
-            while @_checkRun(run_config)
-                @_runOnce()
+      for g, i in genes
+        new_genes[i] = genes[i]
 
-            @trigger 'finish'
+        if Math.random() < @config.mutate_rate
+          new_genes[i] += evo.util.random() * @config.mutate_amount
 
-        ## Return the best of the last generation bred
-        bestGenes: (number)->
-            return @_prevGenes[0] if not number?
-            return @_prevGenes[0..number-1]
+      return new_genes
 
-        ## Load genes into the pool
-        loadGenes: (genes)->
+    ## Cross two genomes into one
+    _crossGenes: (genes1, genes2) ->
+      new_genes = []
 
-            ## Load genes into the pool
-            @genes = genes[..]
+      flip = false
+      for g, i in genes1
+        flip = !flip if Math.random() < @config.cross_rate
+        new_genes.push (if flip then genes1[i] else genes2[i])
 
-            ## Clear the scored Genes
-            @_scoredGenes = []
+      return new_genes
 
-        #######################
-        ## Private Methods
-        #######################
+    ## Average two gene sets together
+    _averageGenes: (genes1, genes2)->
+      new_genes = []
 
-        ## -------------------------------
-        ## Methods for generating genomes
-        ## -------------------------------
+      for g, i in genes1
+        new_genes.push (genes1[i] + genes2[i])/2
 
-        ## Create a fresh random set of genes
-        _freshGenes: -> (evo.util.random() * @config.mutate_amount for i in [1..@config.genes])
+      return new_genes
 
-        ## Clone a genome gene for gene
-        _cloneGenes: (genes) -> genes[..]
+    ## Run one organism
+    _runOnce: ->
+      ## If autospawn is on and there is a spawn function,
+      # Run the method with a spawn object
+      member = @nextMember() || @nextGenes()
+      score = @trigger 'run', member
+      if member._evo?
+        @report member
+      else if typeof score != "undefined"
+        @report member, score
+      else
+        throw "score was not returned in run function"
 
-        ## Clone a genome with the chance for muations
-        _mutateGenes: (genes) ->
-            new_genes = []
+    ## Calculates the next generation based on the _scoredGenes,
+    # And inserts it into the pool object
+    _generate: ()->
 
-            for g, i in genes
-                new_genes[i] = genes[i]
+      ## Normalize them ratios
+      ratios = evo.util.normalize(@config.ratios)
 
-                if Math.random() < @config.mutate_rate
-                    new_genes[i] += evo.util.random() * @config.mutate_amount
+      ## Ensure the pool is empty
+      @genes = []
 
-            return new_genes
+      ## Store the average
+      scores = (a.score for a in @_scoredGenes)
+      @average = evo.util.mean scores
 
-        ## Cross two genomes into one
-        _crossGenes: (genes1, genes2) ->
-            new_genes = []
+      ## Sort the _scoredGenes by score
+      @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score
 
-            flip = false
-            for g, i in genes1
-                flip = !flip if Math.random() < @config.cross_rate
-                new_genes.push (if flip then genes1[i] else genes2[i])
+      ## add the top scoring genes
+      top_pool = @_scoredGenes.reverse()[0..@config.ratios.top * @config.size]
+      @_history.push top_pool[0].score
 
-            return new_genes
+      ## Amount remaining to breed
+      size = @config.size # - top_pool.length
+      size = 0 if size < 1
 
-        ## Average two gene sets together
-        _averageGenes: (genes1, genes2)->
-            new_genes = []
+      ## Add top entries from breed pool
+      for a in top_pool
+        @genes.push @_cloneGenes(a.genes)
 
-            for g, i in genes1
-                new_genes.push (genes1[i] + genes2[i])/2
+      if ratios.mutate > 0
+        ## Add mutated entries
+        for i in [1..ratios.mutate*size]
+          @genes.push @_mutateGenes(evo.util.sample(top_pool).genes)
 
-            return new_genes
+      if ratios.cross > 0
+        ## Add Crossed entries
+        for i in [1..ratios.cross*size]
+          g1 = evo.util.sample(top_pool).genes
+          g2 = evo.util.sample(top_pool).genes
+          @genes.push @_crossGenes(g1, g2)
 
-        ## Run one organism
-        _runOnce: ->
-          ## If autospawn is on and there is a spawn function,
-          # Run the method with a spawn object
-          member = @nextMember() || @nextGenes()
-          score = @trigger 'run', member
-          if member._evo?
-            @report member
-          else if typeof score != "undefined"
-            @report member, score
-          else
-            throw "score was not returned in run function"
+      if ratios.average > 0
+        ## Add Melded entries
+        for i in [1..ratios.meld*size]
+          g1 = evo.util.sample(top_pool).genes
+          g2 = evo.util.sample(top_pool).genes
+          @genes.push @_averageGenes(g1, g2)
 
-        ## Calculates the next generation based on the _scoredGenes,
-        # And inserts it into the pool object
-        _generate: ()->
+      if ratios.random > 0
+        ## Add random survivors
+        for i in [1..ratios.random*size]
+          @genes.push @_cloneGenes(evo.util.sample(@_scoredGenes).genes)
 
-            ## Normalize them ratios
-            ratios = evo.util.normalize(@config.ratios)
+      ## Fill the rest with fresh genetics
+      @genes.push @_freshGenes() while @genes.length <= size
 
-            ## Ensure the pool is empty
-            @genes = []
+      ## Increment the generation count
+      @generation++
 
-            ## Store the average
-            scores = (a.score for a in @_scoredGenes)
-            @average = evo.util.mean scores
-            @_history.push @average
+      ## Save a static copy of the pool for reference
+      ## Round all Genes to two places
+      @_prevGenes = @genes[..]
 
-            ## Sort the _scoredGenes by score
-            @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score
+      ## Shuffle the pool to get fresh matches
+      @genes = evo.util.shuffle @genes
 
-            ## add the top scoring genes
-            top_pool = @_scoredGenes.reverse()[0..@config.ratios.top * @config.size]
+      # Trigger the breed callback
+      @trigger 'breed'
 
-            ## Amount remaining to breed
-            size = @config.size # - top_pool.length
-            size = 0 if size < 1
+      ## Clear the breed pool for the next generation
+      @_scoredGenes = []
 
-            ## Add top entries from breed pool
-            for a in top_pool
-                @genes.push @_cloneGenes(a.genes)
+  ## Network Class
 
-            if ratios.mutate > 0
-                ## Add mutated entries
-                for i in [1..ratios.mutate*size]
-                    @genes.push @_mutateGenes(evo.util.sample(top_pool).genes)
+  class Network
+    constructor: (@weights, @config)->
+    calc: (input)->
 
-            if ratios.cross > 0
-                ## Add Crossed entries
-                for i in [1..ratios.cross*size]
-                    g1 = evo.util.sample(top_pool).genes
-                    g2 = evo.util.sample(top_pool).genes
-                    @genes.push @_crossGenes(g1, g2)
+  ## Factory Function
+  evo.network = (type, genes, config)->
+    config = evo.util.extend evo.config.network, config
 
-            if ratios.average > 0
-                ## Add Melded entries
-                for i in [1..ratios.meld*size]
-                    g1 = evo.util.sample(top_pool).genes
-                    g2 = evo.util.sample(top_pool).genes
-                    @genes.push @_averageGenes(g1, g2)
+    if type is 'feedforward'
+      return new FeedForward(genes, config)
+    else if type is 'cppn'
+      return new Cppn(genes, config)
+      
 
-            if ratios.random > 0
-                ## Add random survivors
-                for i in [1..ratios.random*size]
-                    @genes.push @_cloneGenes(evo.util.sample(@_scoredGenes).genes)
+  ## Compositional Pattern Producing Network
 
-            ## Fill the rest with fresh genetics
-            @genes.push @_freshGenes() while @genes.length <= size
+  class Cppn extends Network
+    @node_fn: [
+      evo.util.gaussian
+      evo.util.sin
+      (x,m,b)-> evo.util.tanh evo.util.linear(x,m,b)
+    ]
 
-            ## Increment the generation count
-            @generation++
+    get_fn: (gene)->
+      index = Math.round(Math.abs(gene)*Cppn.node_fn.length) % Cppn.node_fn.length
+      return Cppn.node_fn[index]
 
-            ## Save a static copy of the pool for reference
-            ## Round all Genes to two places
-            @_prevGenes = @genes[..]
+    ## Gene Structure
+    constructor: (genes, @config)->
+      @node_fn = []
+      copy = genes[..]
 
-            ## Shuffle the pool to get fresh matches
-            @genes = evo.util.shuffle @genes
+      for i in [0..@config.hidden_layers-1]
+        @node_fn[i] = []
+        for j in [0..@config.hidden_nodes-1]
+          @node_fn[i].push @get_fn(copy.pop())
 
-            # Trigger the breed callback
-            @trigger 'breed'
 
-            ## Clear the breed pool for the next generation
-            @_scoredGenes = []
+      @weights = copy[..]
 
-    ## Network Class
+    calc: (input)->
+      # input.push 0 while input.length < @config.input
+      layer_size = @config.hidden_nodes
 
-    class Network
-        constructor: (@weights, @config)->
-        calc: (input)->
+      copy = @weights[..]
 
-    ## Factory Function
-    evo.network = (type, genes, config)->
-        config = evo.util.extend evo.config.network, config
+      hidden_weights = []
 
-        if type is 'feedforward'
-            return new FeedForward(genes, config)
-        else if type is 'cppn'
-            return new Cppn(genes, config)
-           
-    ## Compositional Pattern Producing Network
+      for k in [0..@config.hidden_layers-1]
+        hidden_weights[k] = []
+        for i in [0..@config.hidden_nodes-1]
+          hidden_weights[k][i] = 0
 
-    class Cppn extends Network
-        @node_fn: [
-            evo.util.gaussian
-            evo.util.sin
-            (x,m,b)-> evo.util.tanh evo.util.linear(x,m,b)
-        ]
+      for x in input
+        for i in [0..@config.hidden_nodes-1]
+          hidden_weights[0][i] += x * copy.pop()
 
-        get_fn: (gene)->
-            index = Math.round(Math.abs(gene)*Cppn.node_fn.length) % Cppn.node_fn.length
-            return Cppn.node_fn[index]
+      for k in [0..@config.hidden_layers-2]
+        for i in [0..@config.hidden_nodes-1]
 
-        ## Gene Structure
-        constructor: (genes, @config)->
-            @node_fn = []
-            copy = genes[..]
+          ## Threshold
+          # hidden_weights[k][i] += copy.pop()
 
-            for i in [0..@config.hidden_layers-1]
-                @node_fn[i] = []
-                for j in [0..@config.hidden_nodes-1]
-                    @node_fn[i].push @get_fn(copy.pop())
+          ## Normalize
+          hidden_weights[k][i] = @node_fn[k][i](hidden_weights[k][i], copy.pop(), copy.pop())
 
+          continue unless k+1 < @config.hidden_layers
+          for j in [0..@config.hidden_nodes-1]
+            hidden_weights[k+1][j] += hidden_weights[k][i] * copy.pop()
 
-            @weights = copy[..]
+      output = []
+      for j in [0..@config.output_nodes-1]
+        output[j] = 0
+        for i in [0..@config.hidden_nodes-1]
+          # fn = @node_fn[@config.hidden_layers-1][i]
+          output[j] += hidden_weights[@config.hidden_layers-1][i] * copy.pop()
 
-        calc: (input)->
-            # input.push 0 while input.length < @config.input
-            layer_size = @config.hidden_nodes
+        output[j] = evo.util.tanh output[j]
 
-            copy = @weights[..]
+      return output
 
-            hidden_weights = []
+  ## Classic Feed Forward Network
 
-            for k in [0..@config.hidden_layers-1]
-                hidden_weights[k] = []
-                for i in [0..@config.hidden_nodes-1]
-                    hidden_weights[k][i] = 0
+  class FeedForward extends Network
 
-            for x in input
-                for i in [0..@config.hidden_nodes-1]
-                    hidden_weights[0][i] += x * copy.pop()
+    constructor: (@weights, @config) ->
+      if typeof @config.output_fn == 'function'
+        @output_fn = @config.output_fn
 
-            for k in [0..@config.hidden_layers-2]
-                for i in [0..@config.hidden_nodes-1]
+      else if @config.output_fn == 'linear'
+        @output_fn = evo.util.linear
 
-                    ## Threshold
-                    # hidden_weights[k][i] += copy.pop()
+      else if @config.output_fn == 'step'
+        @output_fn = evo.util.step
 
-                    ## Normalize
-                    hidden_weights[k][i] = @node_fn[k][i](hidden_weights[k][i], copy.pop(), copy.pop())
+      else
+        @output_fn = evo.util.tanh
 
-                    continue unless k+1 < @config.hidden_layers
-                    for j in [0..@config.hidden_nodes-1]
-                        hidden_weights[k+1][j] += hidden_weights[k][i] * copy.pop()
+    calc: (input)->
+      if input.length != @config.input_nodes
+        throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
+      # input.push 0 while input.length < @config.input
 
-            output = []
-            for j in [0..@config.output_nodes-1]
-                output[j] = 0
-                for i in [0..@config.hidden_nodes-1]
-                    # fn = @node_fn[@config.hidden_layers-1][i]
-                    output[j] += hidden_weights[@config.hidden_layers-1][i] * copy.pop()
+      copy = @weights[..].reverse()
+      hidden_weights = []
+      hidden_weights[j] = 0 for j in [0..@config.hidden_nodes-1]
 
-                output[j] = evo.util.tanh output[j]
+      output_weights = []
+      output_weights[j] = 0 for j in [0..@config.output_nodes-1]
 
-            return output
-            
-    ## Classic Feed Forward Network
 
-    class FeedForward extends Network
+      for i in input
+        for h, j in hidden_weights
+          hidden_weights[j] += i * copy.pop()
 
-        constructor: (@weights, @config) ->
-            if typeof @config.output_fn == 'function'
-                @output_fn = @config.output_fn
+      for h, i in hidden_weights
+        ## Threshold
+        hidden_weights[i] += copy.pop()
 
-            else if @config.output_fn == 'linear'
-                @output_fn = evo.util.linear
-                
-            else if @config.output_fn == 'step'
-                @output_fn = evo.util.step
+        ## Normalize
+        hidden_weights[i] = evo.util.tanh hidden_weights[i]
 
-            else
-                @output_fn = evo.util.tanh
+        for o, j in output_weights
+          output_weights[j] += hidden_weights[i] * copy.pop()
 
-        calc: (input)->
-            if input.length != @config.input_nodes
-                throw Error("Inputs dont match. Expected: #{@config.input_nodes}, Received: #{input.length}")
-            # input.push 0 while input.length < @config.input
+      for o, i in output_weights
+        output_weights[i] = @output_fn output_weights[i]
 
-            copy = @weights[..].reverse()
-            hidden_weights = []
-            hidden_weights[j] = 0 for j in [0..@config.hidden_nodes-1]
+      return output_weights[0] if output_weights.length == 1
 
-            output_weights = []
-            output_weights[j] = 0 for j in [0..@config.output_nodes-1]
+      return output_weights
 
 
-            for i in input
-                for h, j in hidden_weights
-                    hidden_weights[j] += i * copy.pop()
-
-            for h, i in hidden_weights
-                ## Threshold
-                hidden_weights[i] += copy.pop()
-
-                ## Normalize
-                hidden_weights[i] = evo.util.tanh hidden_weights[i]
-
-                for o, j in output_weights
-                    output_weights[j] += hidden_weights[i] * copy.pop()
-
-            for o, i in output_weights
-                output_weights[i] = @output_fn output_weights[i]
-
-            return output_weights[0] if output_weights.length == 1
-
-            return output_weights
-
-
-
-    return evo 
+  return evo
 )
-

@@ -1,7 +1,7 @@
 /**
- * evo.js v0.1.1
- * Genetic Algorithm Calculator with ANN
- * Copyright (c) 2015 Alex Rowe <aprowe@ucsc.edu>
+ * evo.js v0.2.2
+ * Evolutionary Algorithm Tool wrapped with ANN
+ * Copyright (c) 2016 Alex Rowe <aprowe@ucsc.edu>
  * Licensed MIT
  **/
 (function() {
@@ -36,8 +36,8 @@
           mutate: 0.25,
           cross: 0.25,
           random: 0.10,
-          meld: 0.00,
-          fresh: 0.15
+          average: 0.05,
+          fresh: 0.10
         },
         run_conditions: {
           generations: 1000,
@@ -458,11 +458,11 @@
           return results;
         }).call(this);
         this.average = evo.util.mean(scores);
-        this._history.push(this.average);
         this._scoredGenes = this._scoredGenes.sort(function(a, b) {
           return a.score - b.score;
         });
         top_pool = this._scoredGenes.reverse().slice(0, +(this.config.ratios.top * this.config.size) + 1 || 9e9);
+        this._history.push(top_pool[0].score);
         size = this.config.size;
         if (size < 1) {
           size = 0;
