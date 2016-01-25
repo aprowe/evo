@@ -227,13 +227,13 @@ class Pool extends Base
         ## Store the average
         scores = (a.score for a in @_scoredGenes)
         @average = evo.util.mean scores
-        @_history.push @average
 
         ## Sort the _scoredGenes by score
         @_scoredGenes = @_scoredGenes.sort (a,b)-> a.score - b.score
 
         ## add the top scoring genes
         top_pool = @_scoredGenes.reverse()[0..@config.ratios.top * @config.size]
+        @_history.push @top_pool.score
 
         ## Amount remaining to breed
         size = @config.size # - top_pool.length
