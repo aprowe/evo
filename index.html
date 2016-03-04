@@ -6,8 +6,8 @@
     <title>Evojs by aprowe</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -18,94 +18,140 @@
         <h1>Evojs</h1>
         <p>Evolutionary Algorithms with ANN</p>
 
-        <p class="view"><a href="https://github.com/aprowe/evojs">View the Project on GitHub <small>aprowe/evojs</small></a></p>
+        <p class="view"><a href="https://github.com/aprowe/evo">View the Project on GitHub <small>aprowe/evo</small></a></p>
 
 
         <ul>
-          <li><a href="https://github.com/aprowe/evojs/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/aprowe/evojs/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/aprowe/evojs">View On <strong>GitHub</strong></a></li>
+          <li><a href="https://github.com/aprowe/evo/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/aprowe/evo/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/aprowe/evo">View On <strong>GitHub</strong></a></li>
         </ul>
       </header>
       <section>
         <h1>
-<a id="--evojs" class="anchor" href="#--evojs" aria-hidden="true"><span class="octicon octicon-link"></span></a>  evoJS</h1>
+<a id="evojs" class="anchor" href="#evojs" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>evoJS</h1>
 
-<p>evoJS is a genetic algorithm 'calculator', making it easy to incoporate evolutionary algorithms in your code.<br>
-Wrapped in the library are simple ANN (Artificial Neural Network) and CPPN (Compositional Pattern Producing Network) 
-classes that work easily with the genetic algorithm. </p>
+<p>evoJS is a genetic and evolutionary algorithm tool, making it easy to incorporate evolutionary algorithms in your JavaScript.  </p>
 
 <h2>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
-<p>evoJS is compatible with both require.js and node.</p>
+<p>To install run <code>npm install evo-js</code>.</p>
+
+<p>To run on a browser, include <code>evo.min.js</code> in your scripts. </p>
 
 <h2>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+<a id="basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic Usage</h2>
 
-<p>Getting started is easy:</p>
+<p>The tool is used through a <code>pool</code> object. Here is a simple example</p>
 
-<div class="highlight highlight-javascript"><pre>    <span class="pl-c">// Instantiate a pool object</span>
-    <span class="pl-s">var</span> pool <span class="pl-k">=</span> evo.pool();
+<div class="highlight highlight-source-js"><pre>    <span class="pl-c">// Instantiate a pool object</span>
+    <span class="pl-k">var</span> pool <span class="pl-k">=</span> <span class="pl-smi">evo</span>.<span class="pl-en">pool</span>();
 
-    <span class="pl-c">// Get the next set of genes</span>
-    <span class="pl-s">var</span> genes <span class="pl-k">=</span> pool.<span class="pl-sc">next</span>();  
+    <span class="pl-c">// Define a method to evaluate genes and return the fitness</span>
+    <span class="pl-c">// Genes comes as a long list of floats</span>
+    <span class="pl-smi">pool</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>run<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">genes</span>){
+        <span class="pl-k">return</span> <span class="pl-en">evaluateGenes</span>(genes); <span class="pl-c">// Supply this method to evaluate the genes</span>
+    });
 
-    <span class="pl-c">// Create a feed forward network</span>
-    <span class="pl-s">var</span> net <span class="pl-k">=</span> evo.network(<span class="pl-s1"><span class="pl-pds">'</span>feedforward<span class="pl-pds">'</span></span>, genes) 
+    <span class="pl-c">// Run with a stopping criteria</span>
+    <span class="pl-smi">pool</span>.<span class="pl-en">run</span>({generations<span class="pl-k">:</span> <span class="pl-c1">10</span>});
 
-    <span class="pl-c">// Evaluate the network</span>
-    <span class="pl-s">var</span> output <span class="pl-k">=</span> net.calc([<span class="pl-c1">0</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>]);
+    <span class="pl-c">// Get the best genes</span>
+    <span class="pl-k">var</span> result <span class="pl-k">=</span> <span class="pl-smi">pool</span>.<span class="pl-en">bestGenes</span>();</pre></div>
 
-    <span class="pl-c">// Assign a score to the output</span>
-    net.score <span class="pl-k">=</span> output[<span class="pl-c1">0</span>] <span class="pl-k">-</span> output[<span class="pl-c1">1</span>];
+<h2>
+<a id="pool-configuration" class="anchor" href="#pool-configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Pool Configuration</h2>
 
-    <span class="pl-c">// Report back to the pool</span>
-    pool.report(net);</pre></div>
+<p>As an argument to <code>evo.pool</code> a configuration object can be passed to override the
+defaults. Here are the defaults.</p>
 
-<p>Gradually, the gene pool will evolve to maxmize the score.
-The magic happens in <code>pool.next</code> and <code>pool.report</code>. <code>pool.next()</code> will retrieve the next set of genes,
-and when the pool is empty, it will breed all of the specimens you have reported back to the pool via <code>pool.report</code>.</p>
+<div class="highlight highlight-source-js"><pre>    <span class="pl-k">var</span> config <span class="pl-k">=</span> {
+        genes<span class="pl-k">:</span> <span class="pl-c1">200</span>, <span class="pl-c">// Number of genes for each member</span>
+        size<span class="pl-k">:</span> <span class="pl-c1">100</span>, <span class="pl-c">//  Number of members in the gene pool</span>
+        cross_rate<span class="pl-k">:</span> <span class="pl-c1">0.05</span>, <span class="pl-c">// The frequency of gene "twists" in two parents genes</span>
+        mutate_rate<span class="pl-k">:</span> <span class="pl-c1">0.05</span>, <span class="pl-c">// The frequency of mutations in a parent gene</span>
+        mutate_amount<span class="pl-k">:</span> <span class="pl-c1">1.0</span>, <span class="pl-c">// The amount a mutated gene can deviate</span>
 
-<h6>
-<a id="triggers" class="anchor" href="#triggers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Triggers</h6>
+        <span class="pl-c">// Each generation is made from a mix of different breeding strategies</span>
+        <span class="pl-c">// Ratios defines the ratio of each in the next generation</span>
+        ratios<span class="pl-k">:</span> {
+            top<span class="pl-k">:</span>    <span class="pl-c1">0.25</span>,    <span class="pl-c">// Survivors last generation</span>
+            mutate<span class="pl-k">:</span> <span class="pl-c1">0.25</span>,    <span class="pl-c">// Created by randomly altering genes</span>
+            cross<span class="pl-k">:</span>  <span class="pl-c1">0.25</span>,    <span class="pl-c">// Created from crossing parents</span>
+            random<span class="pl-k">:</span> <span class="pl-c1">0.10</span>,    <span class="pl-c">// Random survivors</span>
+            average<span class="pl-k">:</span><span class="pl-c1">0.05</span>,    <span class="pl-c">// Parents genes are averaged together</span>
+            fresh<span class="pl-k">:</span>  <span class="pl-c1">0.10</span>    <span class="pl-c">// Random gene sets</span>
+        }
+    });
 
-<hr>
+    <span class="pl-k">var</span> pool <span class="pl-k">=</span> <span class="pl-smi">evo</span>.<span class="pl-en">pool</span>(config);</pre></div>
 
-<p>We can monitor for when a generation is computed with the 'breed' trigger.</p>
+<h2>
+<a id="stopping-conditions" class="anchor" href="#stopping-conditions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Stopping conditions</h2>
 
-<div class="highlight highlight-javascript"><pre>    pool.on(<span class="pl-s1"><span class="pl-pds">'</span>breed<span class="pl-pds">'</span></span>, <span class="pl-st">function</span>(){
-        <span class="pl-en">console</span><span class="pl-s3">.log</span>(<span class="pl-v">this</span>.generation); <span class="pl-c">// Prints the number of generations computed</span>
+<p>As an argument to <code>pool.run</code> a configuration object can be passed to defined the
+stopping conditions</p>
+
+<div class="highlight highlight-source-js"><pre>    <span class="pl-k">var</span> config <span class="pl-k">=</span> {
+        iterations<span class="pl-k">:</span> <span class="pl-c1">1000</span>, <span class="pl-c">// How many genes will be run</span>
+        generations<span class="pl-k">:</span> <span class="pl-c1">100</span>, <span class="pl-c">// How many generations will be run</span>
+        score<span class="pl-k">:</span> <span class="pl-c1">10.0</span>,      <span class="pl-c">// Minimum score to be reached (higher score is better)</span>
+        <span class="pl-c">// A while function can be supplied</span>
+        <span class="pl-c">// when false is returned sim stops</span>
+        <span class="pl-en">while</span><span class="pl-k">:</span> <span class="pl-k">function</span>(){
+            <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+        }
+
+        <span class="pl-c">// If true, a method will be attempted to stop when the score</span>
+        <span class="pl-c">// stops changing across generations</span>
+        auto_run<span class="pl-k">:</span> <span class="pl-c1">false</span>
+    });
+
+    <span class="pl-smi">pool</span>.<span class="pl-en">run</span>(config);</pre></div>
+
+<h2>
+<a id="manual-simulations" class="anchor" href="#manual-simulations" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>'Manual' simulations</h2>
+
+<p>While pool provides the run method to run simulations, the gene pool can be accessed
+manually for custom simulations.</p>
+
+<div class="highlight highlight-source-js"><pre>    pool <span class="pl-k">=</span> <span class="pl-smi">evo</span>.<span class="pl-en">pool</span>()
+
+    <span class="pl-k">while</span>(<span class="pl-smi">pool</span>.<span class="pl-smi">generation</span> <span class="pl-k">&lt;</span> <span class="pl-c1">100</span>) {
+        <span class="pl-c">// Grab next genes</span>
+        <span class="pl-k">var</span> genes <span class="pl-k">=</span> <span class="pl-smi">pool</span>.<span class="pl-en">nextGenes</span>();
+
+        <span class="pl-c">//Evaluate genes</span>
+        <span class="pl-k">var</span> score <span class="pl-k">=</span> <span class="pl-en">evaluateGenes</span>(genes);
+
+        <span class="pl-c">//Report genes back to pool</span>
+        <span class="pl-smi">pool</span>.<span class="pl-en">report</span>(genes, score);
+    }</pre></div>
+
+<p>When the gene pool is empty, a new generation will be created.</p>
+
+<h2>
+<a id="member-construction" class="anchor" href="#member-construction" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Member construction</h2>
+
+<p>You may provide a member constructor to automate gene evaluation, and use a more
+object oriented approach</p>
+
+<div class="highlight highlight-source-js"><pre>    pool <span class="pl-k">=</span> <span class="pl-smi">evo</span>.<span class="pl-en">pool</span>()
+
+    <span class="pl-c">// Supply a 'constructor' to use the genes</span>
+    <span class="pl-smi">pool</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>member<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">genes</span>){
+        <span class="pl-k">var</span> member <span class="pl-k">=</span> {
+            height<span class="pl-k">:</span> genes[<span class="pl-c1">0</span>],
+            width<span class="pl-k">:</span> genes[<span class="pl-c1">1</span>]
+        };
+        <span class="pl-k">return</span> member;
+    });
+
+    <span class="pl-c">// Run will now give your constructed member instead of a gene list</span>
+    <span class="pl-smi">pool</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>run<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">member</span>){
+        <span class="pl-k">return</span> <span class="pl-smi">member</span>.<span class="pl-c1">height</span> <span class="pl-k">+</span> <span class="pl-smi">member</span>.<span class="pl-c1">width</span>;
     });</pre></div>
-
-<h6>
-<a id="spawn-objects" class="anchor" href="#spawn-objects" aria-hidden="true"><span class="octicon octicon-link"></span></a>Spawn Objects</h6>
-
-<p>For easy creation of objects using the genes, we can use the 'spawn' trigger. This lets you define a function to shortcut the creation of your genetic object.</p>
-
-<div class="highlight highlight-javascript"><pre>    pool.on(<span class="pl-s1"><span class="pl-pds">'</span>spawn<span class="pl-pds">'</span></span>, <span class="pl-st">function</span>(<span class="pl-vpf">genes</span>){
-        <span class="pl-s">var</span> net <span class="pl-k">=</span> evo.network(<span class="pl-s1"><span class="pl-pds">'</span>cppn<span class="pl-pds">'</span></span>, genes);
-        <span class="pl-k">return</span> net;
-    });</pre></div>
-
-<p>The return value of this function will be returned when <code>pool.spawn</code> is called.
-Now, we can do this: </p>
-
-<div class="highlight highlight-javascript"><pre>    <span class="pl-s">var</span> net <span class="pl-k">=</span> pool.spawn();
-
-    <span class="pl-c">// Evaluate the network</span>
-    <span class="pl-s">var</span> output <span class="pl-k">=</span> net.calc([<span class="pl-c1">0</span>,<span class="pl-c1">1</span>,<span class="pl-c1">2</span>]);
-
-    <span class="pl-c">// Assign a score to the output</span>
-    net.score <span class="pl-k">=</span> output[<span class="pl-c1">0</span>] <span class="pl-k">-</span> output[<span class="pl-c1">1</span>];
-
-    <span class="pl-c">// pool reference is now stored in net. </span>
-    net.report();</pre></div>
-
-<h2>
-<a id="more-to-come" class="anchor" href="#more-to-come" aria-hidden="true"><span class="octicon octicon-link"></span></a>More to Come</h2>
-
-<p>evoJS is a just baby!</p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/aprowe">aprowe</a></p>
