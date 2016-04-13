@@ -13,16 +13,20 @@ Basic Usage
 The tool is used through a `pool` object. Here is a simple example
 
 ```javascript
+    var evo = require('evo-js');
+    
     // Instantiate a pool object
     var pool = evo.pool();
 
     // Define a method to evaluate genes and return the fitness
     // Genes comes as a long list of floats
     pool.on('run', function(genes){
-        return evaluateGenes(genes); // Supply this method to evaluate the genes
+        // Evaluate genes in this method,
+        // Return a the fitness score (number)
+        return genes[0] + genes[1];
     });
 
-    // Run with a stopping criteria
+    // Run with a stopping criterium
     pool.run({generations: 10});
 
     // Get the best genes
