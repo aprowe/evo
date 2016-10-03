@@ -19,9 +19,9 @@ config =
 
 
 describe 'Given a method to construct a member', ->
-  pool = evo.pool config
-  pool.on 'member', (genes)-> {a: 'a'}
-  member = pool.nextMember()
+  population = evo.population config
+  population.on 'member', (genes)-> {a: 'a'}
+  member = population.nextMember()
 
   it 'will use that method to create a member', ->
     expect(member.a).toEqual('a')
@@ -35,182 +35,182 @@ describe 'Given a method to construct a member', ->
 describe 'Given a method to run a simulation', ->
 
   it 'will stop after a certain amount if stopping number is supplied', ->
-    pool = evo.pool config
+    population = evo.population config
     numberRun = 0
-    pool.on 'run', -> numberRun++
-    pool.run(10)
+    population.on 'run', -> numberRun++
+    population.run(10)
     expect(numberRun).toEqual(10)
 
   describe 'When a member constructor member is NOT supplied', ->
     it 'will run it with genes as a supplied parameter', ->
-      pool = evo.pool config
+      population = evo.population config
       g = {}
-      pool.on 'run', (genes)-> g=genes
-      pool.run(10);
+      population.on 'run', (genes)-> g=genes
+      population.run(10);
       expect(g.length).toEqual(n_genes)
 
  describe 'When a member constructor member is supplied', ->
 
    it 'runs with a new member as a supplied parameter', ->
-     pool = evo.pool config
+     population = evo.population config
      g = {}
-     pool.on 'member', (genes)-> g = {name:"testName"}
-     pool.run(10)
-     pool.on 'run', (genes)-> g=genes
+     population.on 'member', (genes)-> g = {name:"testName"}
+     population.run(10)
+     population.on 'run', (genes)-> g=genes
      expect(g.name).toEqual("testName")
 
   describe 'When a stop method is provided', ->
     it 'stops when the function returns true', ->
-      pool = evo.pool config
+      population = evo.population config
       m = 0
-      pool.on 'run', ->  m++
-      pool.run(-> m < 4)
-      # pool.run(-> m < 5)
+      population.on 'run', ->  m++
+      population.run(-> m < 4)
+      # population.run(-> m < 5)
       expect(m).toBe(4)
 
 
 describe 'When calling nextGenes', ->
   it 'will return a list of genes', ->
-    pool = evo.pool config
-    genes = pool.nextGenes()
+    population = evo.population config
+    genes = population.nextGenes()
     expect(genes.length).toEqual(n_genes)
 
 
 describe 'Pool Population', ->
  	it "Creates The right number of genes", ->
-    pool = evo.pool(config)
-    pool.on 'run', ->0.5
-    expect(pool.genes.length).toBe size
+    population = evo.population(config)
+    population.on 'run', ->0.5
+    expect(population.genes.length).toBe size
 
-    pool.run(1)
-    expect(pool.genes.length).toBe size-1
+    population.run(1)
+    expect(population.genes.length).toBe size-1
 
-    pool.run(size)
-    expect(pool.genes.length).toBe size
+    population.run(size)
+    expect(population.genes.length).toBe size
 
   it "Gene sets have the right number of genes", ->
-    pool = evo.pool(config)
-    expect(pool.genes[0].length).toBe n_genes
+    population = evo.population(config)
+    expect(population.genes[0].length).toBe n_genes
 
 
 
 describe "When running a simulation", ->
   it "Keeps a history of previous averages", ->
-    pool = evo.pool config
-    pool.on "run", (genes)-> 0.5
-    pool.run(size)
-    expect(pool.average).toBe(0.5)
-    expect(pool._history[0]).toBe(0.5)
-    pool.run(size * 9)
-    expect(pool._history.length).toBe(pool.generation)
+    population = evo.population config
+    population.on "run", (genes)-> 0.5
+    population.run(size)
+    expect(population.average).toBe(0.5)
+    expect(population._history[0]).toBe(0.5)
+    population.run(size * 9)
+    expect(population._history.length).toBe(population.generation)
 
   it "increments generation count after all members tested", ->
-    pool = evo.pool config
-    pool.on "run", (genes)-> 0.5
+    population = evo.population config
+    population.on "run", (genes)-> 0.5
 
-    expect(pool.generation).toBe(0)
+    expect(population.generation).toBe(0)
 
-    pool.run size
-    expect(pool.generation).toBe(1)
+    population.run size
+    expect(population.generation).toBe(1)
 
-    pool.run size+1 ## TODO Why is it like this
-    expect(pool.generation).toBe(2)
+    population.run size+1 ## TODO Why is it like this
+    expect(population.generation).toBe(2)
 
-    pool.run size+1
-    expect(pool.generation).toBe(3)
+    population.run size+1
+    expect(population.generation).toBe(3)
 
 
 
 describe "Run Configuration object", ->
   it "Will run a specific amount of iterations", ->
-    pool = evo.pool config
-    pool.on "run", ->0.5
+    population = evo.population config
+    population.on "run", ->0.5
     run_config =
       iterations: 1234
 
-    pool.run run_config
-    expect(pool.iteration).toBe(1234)
+    population.run run_config
+    expect(population.iteration).toBe(1234)
 
   it "will run a specific amount of generations", ->
-    pool = evo.pool config
-    pool.on "run", ->0.5
+    population = evo.population config
+    population.on "run", ->0.5
     run_config =
       generations: 111
 
-    pool.run run_config
-    expect(pool.generation).toBe(111)
+    population.run run_config
+    expect(population.generation).toBe(111)
 
   it "will stop when a specific max score is reached", ->
-    pool = evo.pool config
-    pool.on "run", (g)->g[0]
+    population = evo.population config
+    population.on "run", (g)->g[0]
     run_config =
       score: 2.0
 
-    pool.run run_config
-    expect(pool.average).toBeGreaterThan(2.0)
+    population.run run_config
+    expect(population.average).toBeGreaterThan(2.0)
 
   it "will stop when a while function returns false", ->
-    pool = evo.pool config
-    pool.on "run", (g)->g[0]
+    population = evo.population config
+    population.on "run", (g)->g[0]
 
     i = 0
     run_config =
       while: -> i++ < 145
 
-    pool.run run_config
+    population.run run_config
     expect(i).toBe(146)
 
   it "will autodetect when score is optimized", ->
-    pool = evo.pool config
+    population = evo.population config
 
-    pool.on "run", (genes)->
+    population.on "run", (genes)->
       return -Math.abs(genes[0]);
 
     run_config =
       auto_stop: true
       generations: 100
 
-    pool.run run_config
-    expect(pool.average).toBeLessThan(0.1)
+    population.run run_config
+    expect(population.average).toBeLessThan(0.1)
 
   it "will autodetect when score is not improving", ->
-    pool = evo.pool config
+    population = evo.population config
 
     i = 0
-    pool.on "run", (genes)->
+    population.on "run", (genes)->
       return i++
 
     run_config =
       auto_stop: true
       generations: 100
 
-    pool.run run_config
-    expect(pool.generation).toBe(100)
+    population.run run_config
+    expect(population.generation).toBe(100)
 
   it "Can call subsequent run calls for generations", ->
-    pool = evo.pool config
+    population = evo.population config
 
-    pool.on "run", (genes)->0.0
+    population.on "run", (genes)->0.0
 
     run_config =
       generations: 100
 
-    pool.run run_config
-    expect(pool.generation).toBe(100)
+    population.run run_config
+    expect(population.generation).toBe(100)
 
-    pool.run run_config
-    expect(pool.generation).toBe(200)
+    population.run run_config
+    expect(population.generation).toBe(200)
 
   it "Can call subsequent run calls for iterations", ->
-    pool = evo.pool config
+    population = evo.population config
 
-    pool.on "run", (genes)->0.0
+    population.on "run", (genes)->0.0
 
     run_config =
       iterations: 100
 
-    pool.run run_config
-    expect(pool.iteration).toBe(100)
+    population.run run_config
+    expect(population.iteration).toBe(100)
 
-    pool.run run_config
-    expect(pool.iteration).toBe(200)
+    population.run run_config
+    expect(population.iteration).toBe(200)

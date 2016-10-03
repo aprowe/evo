@@ -31,16 +31,16 @@ scoreNet = (net)->
 
 
 describe "Pool XOR Test", ->
-  it "Trains a pool that can solve the XOR problem", ->
+  it "Trains a population that can solve the XOR problem", ->
 
-    pool = evo.pool config
-    pool.on 'run', (spawn)->
+    population = evo.population config
+    population.on 'run', (spawn)->
       spawn._evo.score = scoreNet spawn
 
-    # pool.run -> @average < 3.50 and @generation < 1000
-    pool.run
+    # population.run -> @average < 3.50 and @generation < 1000
+    population.run
       auto_stop: true
       generations: 100
       # score: 3.5
 
-    expect(pool.average).toBeGreaterThan(3.5)
+    expect(population.average).toBeGreaterThan(3.5)

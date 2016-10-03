@@ -51,7 +51,7 @@
 
   describe("Line fitting test", function() {
     return it("Solves a line fitting problem", function() {
-      var evalGenes, pool;
+      var evalGenes, population;
       evalGenes = function(genes) {
         var dist, j, len, p, poly;
         poly = function(x) {
@@ -69,10 +69,10 @@
         }
         return -dist;
       };
-      pool = evo.pool({
+      population = evo.population({
         mutate_amount: 10.0
       });
-      return pool.on('run', function(genes) {
+      return population.on('run', function(genes) {
         return evalGenes(genes);
       });
     });
@@ -104,14 +104,14 @@
   };
 
   describe('Given a method to construct a member', function() {
-    var member, pool;
-    pool = evo.pool(config);
-    pool.on('member', function(genes) {
+    var member, population;
+    population = evo.population(config);
+    population.on('member', function(genes) {
       return {
         a: 'a'
       };
     });
-    member = pool.nextMember();
+    member = population.nextMember();
     it('will use that method to create a member', function() {
       return expect(member.a).toEqual('a');
     });
@@ -125,24 +125,24 @@
 
   describe('Given a method to run a simulation', function() {
     it('will stop after a certain amount if stopping number is supplied', function() {
-      var numberRun, pool;
-      pool = evo.pool(config);
+      var numberRun, population;
+      population = evo.population(config);
       numberRun = 0;
-      pool.on('run', function() {
+      population.on('run', function() {
         return numberRun++;
       });
-      pool.run(10);
+      population.run(10);
       return expect(numberRun).toEqual(10);
     });
     return describe('When a member constructor member is NOT supplied', function() {
       return it('will run it with genes as a supplied parameter', function() {
-        var g, pool;
-        pool = evo.pool(config);
+        var g, population;
+        population = evo.population(config);
         g = {};
-        pool.on('run', function(genes) {
+        population.on('run', function(genes) {
           return g = genes;
         });
-        pool.run(10);
+        population.run(10);
         return expect(g.length).toEqual(n_genes);
       });
     });
@@ -150,16 +150,16 @@
 
   describe('When a member constructor member is supplied', function() {
     return it('runs with a new member as a supplied parameter', function() {
-      var g, pool;
-      pool = evo.pool(config);
+      var g, population;
+      population = evo.population(config);
       g = {};
-      pool.on('member', function(genes) {
+      population.on('member', function(genes) {
         return g = {
           name: "testName"
         };
       });
-      pool.run(10);
-      pool.on('run', function(genes) {
+      population.run(10);
+      population.on('run', function(genes) {
         return g = genes;
       });
       return expect(g.name).toEqual("testName");
@@ -168,13 +168,13 @@
 
   describe('When a stop method is provided', function() {
     return it('stops when the function returns true', function() {
-      var m, pool;
-      pool = evo.pool(config);
+      var m, population;
+      population = evo.population(config);
       m = 0;
-      pool.on('run', function() {
+      population.on('run', function() {
         return m++;
       });
-      pool.run(function() {
+      population.run(function() {
         return m < 4;
       });
       return expect(m).toBe(4);
@@ -183,103 +183,103 @@
 
   describe('When calling nextGenes', function() {
     return it('will return a list of genes', function() {
-      var genes, pool;
-      pool = evo.pool(config);
-      genes = pool.nextGenes();
+      var genes, population;
+      population = evo.population(config);
+      genes = population.nextGenes();
       return expect(genes.length).toEqual(n_genes);
     });
   });
 
   describe('Pool Population', function() {
     it("Creates The right number of genes", function() {
-      var pool;
-      pool = evo.pool(config);
-      pool.on('run', function() {
+      var population;
+      population = evo.population(config);
+      population.on('run', function() {
         return 0.5;
       });
-      expect(pool.genes.length).toBe(size);
-      pool.run(1);
-      expect(pool.genes.length).toBe(size - 1);
-      pool.run(size);
-      return expect(pool.genes.length).toBe(size);
+      expect(population.genes.length).toBe(size);
+      population.run(1);
+      expect(population.genes.length).toBe(size - 1);
+      population.run(size);
+      return expect(population.genes.length).toBe(size);
     });
     return it("Gene sets have the right number of genes", function() {
-      var pool;
-      pool = evo.pool(config);
-      return expect(pool.genes[0].length).toBe(n_genes);
+      var population;
+      population = evo.population(config);
+      return expect(population.genes[0].length).toBe(n_genes);
     });
   });
 
   describe("When running a simulation", function() {
     it("Keeps a history of previous averages", function() {
-      var pool;
-      pool = evo.pool(config);
-      pool.on("run", function(genes) {
+      var population;
+      population = evo.population(config);
+      population.on("run", function(genes) {
         return 0.5;
       });
-      pool.run(size);
-      expect(pool.average).toBe(0.5);
-      expect(pool._history[0]).toBe(0.5);
-      pool.run(size * 9);
-      return expect(pool._history.length).toBe(pool.generation);
+      population.run(size);
+      expect(population.average).toBe(0.5);
+      expect(population._history[0]).toBe(0.5);
+      population.run(size * 9);
+      return expect(population._history.length).toBe(population.generation);
     });
     return it("increments generation count after all members tested", function() {
-      var pool;
-      pool = evo.pool(config);
-      pool.on("run", function(genes) {
+      var population;
+      population = evo.population(config);
+      population.on("run", function(genes) {
         return 0.5;
       });
-      expect(pool.generation).toBe(0);
-      pool.run(size);
-      expect(pool.generation).toBe(1);
-      pool.run(size + 1);
-      expect(pool.generation).toBe(2);
-      pool.run(size + 1);
-      return expect(pool.generation).toBe(3);
+      expect(population.generation).toBe(0);
+      population.run(size);
+      expect(population.generation).toBe(1);
+      population.run(size + 1);
+      expect(population.generation).toBe(2);
+      population.run(size + 1);
+      return expect(population.generation).toBe(3);
     });
   });
 
   describe("Run Configuration object", function() {
     it("Will run a specific amount of iterations", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function() {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function() {
         return 0.5;
       });
       run_config = {
         iterations: 1234
       };
-      pool.run(run_config);
-      return expect(pool.iteration).toBe(1234);
+      population.run(run_config);
+      return expect(population.iteration).toBe(1234);
     });
     it("will run a specific amount of generations", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function() {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function() {
         return 0.5;
       });
       run_config = {
         generations: 111
       };
-      pool.run(run_config);
-      return expect(pool.generation).toBe(111);
+      population.run(run_config);
+      return expect(population.generation).toBe(111);
     });
     it("will stop when a specific max score is reached", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function(g) {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function(g) {
         return g[0];
       });
       run_config = {
         score: 2.0
       };
-      pool.run(run_config);
-      return expect(pool.average).toBeGreaterThan(2.0);
+      population.run(run_config);
+      return expect(population.average).toBeGreaterThan(2.0);
     });
     it("will stop when a while function returns false", function() {
-      var i, pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function(g) {
+      var i, population, run_config;
+      population = evo.population(config);
+      population.on("run", function(g) {
         return g[0];
       });
       i = 0;
@@ -288,63 +288,63 @@
           return i++ < 145;
         }
       };
-      pool.run(run_config);
+      population.run(run_config);
       return expect(i).toBe(146);
     });
     it("will autodetect when score is optimized", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function(genes) {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function(genes) {
         return -Math.abs(genes[0]);
       });
       run_config = {
         auto_stop: true,
         generations: 100
       };
-      pool.run(run_config);
-      return expect(pool.average).toBeLessThan(0.1);
+      population.run(run_config);
+      return expect(population.average).toBeLessThan(0.1);
     });
     it("will autodetect when score is not improving", function() {
-      var i, pool, run_config;
-      pool = evo.pool(config);
+      var i, population, run_config;
+      population = evo.population(config);
       i = 0;
-      pool.on("run", function(genes) {
+      population.on("run", function(genes) {
         return i++;
       });
       run_config = {
         auto_stop: true,
         generations: 100
       };
-      pool.run(run_config);
-      return expect(pool.generation).toBe(100);
+      population.run(run_config);
+      return expect(population.generation).toBe(100);
     });
     it("Can call subsequent run calls for generations", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function(genes) {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function(genes) {
         return 0.0;
       });
       run_config = {
         generations: 100
       };
-      pool.run(run_config);
-      expect(pool.generation).toBe(100);
-      pool.run(run_config);
-      return expect(pool.generation).toBe(200);
+      population.run(run_config);
+      expect(population.generation).toBe(100);
+      population.run(run_config);
+      return expect(population.generation).toBe(200);
     });
     return it("Can call subsequent run calls for iterations", function() {
-      var pool, run_config;
-      pool = evo.pool(config);
-      pool.on("run", function(genes) {
+      var population, run_config;
+      population = evo.population(config);
+      population.on("run", function(genes) {
         return 0.0;
       });
       run_config = {
         iterations: 100
       };
-      pool.run(run_config);
-      expect(pool.iteration).toBe(100);
-      pool.run(run_config);
-      return expect(pool.iteration).toBe(200);
+      population.run(run_config);
+      expect(population.iteration).toBe(100);
+      population.run(run_config);
+      return expect(population.iteration).toBe(200);
     });
   });
 
@@ -414,17 +414,17 @@
   };
 
   describe("Pool XOR Test", function() {
-    return it("Trains a pool that can solve the XOR problem", function() {
-      var pool;
-      pool = evo.pool(config);
-      pool.on('run', function(spawn) {
+    return it("Trains a population that can solve the XOR problem", function() {
+      var population;
+      population = evo.population(config);
+      population.on('run', function(spawn) {
         return spawn._evo.score = scoreNet(spawn);
       });
-      pool.run({
+      population.run({
         auto_stop: true,
         generations: 100
       });
-      return expect(pool.average).toBeGreaterThan(3.5);
+      return expect(population.average).toBeGreaterThan(3.5);
     });
   });
 

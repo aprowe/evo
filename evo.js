@@ -24,6 +24,21 @@
   })(function() {
     var Base, Cppn, FeedForward, Network, Pool, evo;
     evo = {};
+    evo.population = function(config) {
+      config = evo.util.extend(evo.config.pool, config);
+      return new Pool(config);
+    };
+    evo.network = function(type, genes, config) {
+      config = evo.util.extend(evo.config.network, config);
+      if (type === 'feedforward') {
+        return new FeedForward(genes, config);
+      } else if (type === 'cppn') {
+        return new Cppn(genes, config);
+      }
+    };
+    evo.configure = function(config) {
+      return evo.config = evo.util.extend(evo.config, config);
+    };
     evo.config = {
       pool: {
         genes: 200,
@@ -59,9 +74,6 @@
         hidden_nodes: 2,
         input_nodes: 2
       }
-    };
-    evo.configure = function(config) {
-      return evo.config = evo.util.extend(evo.config, config);
     };
     evo.util = {
       random: function(min, max) {
@@ -234,10 +246,6 @@
       return Base;
 
     })();
-    evo.pool = function(config) {
-      config = evo.util.extend(evo.config.pool, config);
-      return new Pool(config);
-    };
     Pool = (function(superClass) {
       extend(Pool, superClass);
 
@@ -519,14 +527,6 @@
       return Network;
 
     })();
-    evo.network = function(type, genes, config) {
-      config = evo.util.extend(evo.config.network, config);
-      if (type === 'feedforward') {
-        return new FeedForward(genes, config);
-      } else if (type === 'cppn') {
-        return new Cppn(genes, config);
-      }
-    };
     Cppn = (function(superClass) {
       extend(Cppn, superClass);
 

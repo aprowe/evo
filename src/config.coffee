@@ -76,7 +76,3 @@ evo.config =
     hidden_nodes: 2
 
     input_nodes: 2
-
-## Configuration function to set defaults
-evo.configure = (config)->
-  evo.config = evo.util.extend evo.config, config

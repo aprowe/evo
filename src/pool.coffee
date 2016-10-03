@@ -1,7 +1,4 @@
 ## Pool Class
-evo.pool = (config)->
-  config = evo.util.extend evo.config.pool, config
-  return new Pool(config)
 
 class Pool extends Base
   constructor: (@config)->

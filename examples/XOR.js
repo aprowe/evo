@@ -3,9 +3,9 @@
  */
 var evo = require('evo-js');
 
-var pool = evo.pool();
+var population= evo.population();
 
-pool.on('run', function(genes){
+population.on('run', function(genes){
   // Create a neural network
   var net = evo.network('feedforward', genes, {
     output_nodes: 1,
@@ -23,8 +23,8 @@ pool.on('run', function(genes){
 });
 
 // Run until score is 3.5 or greater
-pool.run({
+population.run({
   score: 3.5
 });
 
-console.log("Took " + pool.generation + " generations to reach a score of " + pool.average);
+console.log("Took " + population.generation + " generations to reach a score of " + population.average);

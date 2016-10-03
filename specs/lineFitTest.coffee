@@ -15,6 +15,6 @@ describe "Line fitting test", ->
         dist += Math.pow((poly(p.x) - p.y), 2)
       return -dist;
 
-    pool = evo.pool({mutate_amount:10.0})
-    pool.on 'run', (genes)->
+    population = evo.population({mutate_amount:10.0})
+    population.on 'run', (genes)->
      return evalGenes(genes)

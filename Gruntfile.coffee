@@ -34,6 +34,7 @@ module.exports = (grunt)->
         return src
       src: [
        'src/head.coffee',
+       'src/api.coffee',
        'src/config.coffee',
        'src/util.coffee',
        'src/base.coffee',

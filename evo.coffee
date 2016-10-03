@@ -25,6 +25,25 @@ root = if window? then window else this
 
   evo = {}
 
+
+  evo.population = (config)->
+    config = evo.util.extend evo.config.pool, config
+    return new Pool(config)
+
+  ## Factory Function
+  evo.network = (type, genes, config)->
+    config = evo.util.extend evo.config.network, config
+
+    if type is 'feedforward'
+      return new FeedForward(genes, config)
+    else if type is 'cppn'
+      return new Cppn(genes, config)
+
+
+  ## Configuration function to set defaults
+  evo.configure = (config)->
+    evo.config = evo.util.extend evo.config, config
+
   ## Default Configuration Object
   evo.config =
     pool:
@@ -103,10 +122,6 @@ root = if window? then window else this
       hidden_nodes: 2
 
       input_nodes: 2
-
-  ## Configuration function to set defaults
-  evo.configure = (config)->
-    evo.config = evo.util.extend evo.config, config
 
   ## Utility Functions
   evo.util =
@@ -223,9 +238,6 @@ root = if window? then window else this
       @config['on_'+name].call(this, args) if @config['on_' + name]?
 
   ## Pool Class
-  evo.pool = (config)->
-    config = evo.util.extend evo.config.pool, config
-    return new Pool(config)
 
   class Pool extends Base
     constructor: (@config)->
@@ -515,16 +527,6 @@ root = if window? then window else this
   class Network
     constructor: (@weights, @config)->
     calc: (input)->
-
-  ## Factory Function
-  evo.network = (type, genes, config)->
-    config = evo.util.extend evo.config.network, config
-
-    if type is 'feedforward'
-      return new FeedForward(genes, config)
-    else if type is 'cppn'
-      return new Cppn(genes, config)
-      
 
   ## Compositional Pattern Producing Network
 
