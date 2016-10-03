@@ -6,41 +6,41 @@ Installation
 -------------
 To install run `npm install evo-js`.
 
-To run on a browser, include `evo.min.js` in your scripts. 
+To run on a browser, include `evo.min.js` in your scripts.
 
 Basic Usage
 ---------
-The tool is used through a `pool` object. Here is a simple example
+The tool is used through a `population` object. Here is a simple example
 
 ```javascript
-    var evo = require('evo-js');
-    
-    // Instantiate a pool object
-    var pool = evo.pool();
+    // Instantiate a population object
+    var population = evo.population();
+
+    var evaluateGenes = function (genes) {
+      /* Use genes to return a score */
+    }
 
     // Define a method to evaluate genes and return the fitness
-    // Genes comes as a long list of floats
-    pool.on('run', function(genes){
-        // Evaluate genes in this method,
-        // Return a the fitness score (number)
-        return genes[0] + genes[1];
+    // 'genes' is an array of floats
+    population.on('run', function(genes){
+        return evaluateGenes(genes); // Supply this method to evaluate the genes
     });
 
-    // Run with a stopping criterium
-    pool.run({generations: 10});
+    // Run with a stopping criteria
+    population.run({generations: 10});
 
     // Get the best genes
-    var result = pool.bestGenes();
+    var result = population.bestGenes();
 ```
 
 Pool Configuration
 ----------
-As an argument to `evo.pool` a configuration object can be passed to override the
+As an argument to `evo.population` a configuration object can be passed to override the
 defaults. Here are the defaults.
 ```javascript
     var config = {
         genes: 200, // Number of genes for each member
-        size: 100, //  Number of members in the gene pool
+        size: 100, //  Number of members in the gene population
         cross_rate: 0.05, // The frequency of gene "twists" in two parents genes
         mutate_rate: 0.05, // The frequency of mutations in a parent gene
         mutate_amount: 1.0, // The amount a mutated gene can deviate
@@ -48,25 +48,25 @@ defaults. Here are the defaults.
         // Each generation is made from a mix of different breeding strategies
         // Ratios defines the ratio of each in the next generation
         ratios: {
-            top:    0.25,    // Survivors last generation
+            top:    0.25,    // Survivors from last generation
             mutate: 0.25,    // Created by randomly altering genes
             cross:  0.25,    // Created from crossing parents
-            random: 0.10,    // Random survivors
-            average:0.05,    // Parents genes are averaged together
-            fresh:  0.10    // Random gene sets
+            random: 0.10,    // Random survivors from last generation
+            average:0.05,    // Created by averaging parents together
+            fresh:  0.10     // new, totally random gene sets
         }
     });
 
-    var pool = evo.pool(config);
+    var population = evo.population(config);
 ```
 
 Stopping conditions
 ----------
-As an argument to `pool.run` a configuration object can be passed to defined the
+As an argument to `population.run` a configuration object can be passed to defined the
 stopping conditions
 ```javascript
     var config = {
-        iterations: 1000, // How many genes will be run
+        iterations: 1000, // How many times run will be called
         generations: 100, // How many generations will be run
         score: 10.0,      // Minimum score to be reached (higher score is better)
         // A while function can be supplied
@@ -80,38 +80,38 @@ stopping conditions
         auto_run: false
     });
 
-    pool.run(config);
+    population.run(config);
 ```
 
 'Manual' simulations
 ----------
-While pool provides the run method to run simulations, the gene pool can be accessed
+While population provides the run method to run simulations, the gene population can be accessed
 manually for custom simulations.
 ```javascript
-    pool = evo.pool()
+    population = evo.population()
 
-    while(pool.generation < 100) {
+    while(population.generation < 100) {
         // Grab next genes
-        var genes = pool.nextGenes();
+        var genes = population.nextGenes();
 
         //Evaluate genes
         var score = evaluateGenes(genes);
 
-        //Report genes back to pool
-        pool.report(genes, score);
+        //Report genes back to population
+        population.report(genes, score);
     }
 ```
-When the gene pool is empty, a new generation will be created.
+When the gene population is empty, a new generation will be created.
 
 Member construction
 ----------
 You may provide a member constructor to automate gene evaluation, and use a more
 object oriented approach
 ```javascript
-    pool = evo.pool()
+    population = evo.population()
 
     // Supply a 'constructor' to use the genes
-    pool.on('member', function(genes){
+    population.on('member', function(genes){
         var member = {
             height: genes[0],
             width: genes[1]
@@ -120,7 +120,7 @@ object oriented approach
     });
 
     // Run will now give your constructed member instead of a gene list
-    pool.on('run', function(member){
+    population.on('run', function(member){
         return member.height + member.width;
     });
 ```
