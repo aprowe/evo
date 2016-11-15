@@ -520,6 +520,15 @@
       function Network(weights, config1) {
         this.weights = weights;
         this.config = config1;
+        if (typeof this.config.output_fn === 'function') {
+          this.output_fn = this.config.output_fn;
+        } else if (this.config.output_fn === 'linear') {
+          this.output_fn = evo.util.linear;
+        } else if (this.config.output_fn === 'step') {
+          this.output_fn = evo.util.step;
+        } else {
+          this.output_fn = evo.util.tanh;
+        }
       }
 
       Network.prototype.calc = function(input) {};
@@ -554,6 +563,7 @@
           }
         }
         this.weights = copy.slice(0);
+        Cppn.__super__.constructor.call(this, this.weights, this.config);
       }
 
       Cppn.prototype.calc = function(input) {
@@ -590,7 +600,7 @@
           for (i = v = 0, ref7 = this.config.hidden_nodes - 1; 0 <= ref7 ? v <= ref7 : v >= ref7; i = 0 <= ref7 ? ++v : --v) {
             output[j] += hidden_weights[this.config.hidden_layers - 1][i] * copy.pop();
           }
-          output[j] = evo.util.tanh(output[j]);
+          output[j] = this.output_fn(output[j]);
         }
         return output;
       };
@@ -604,15 +614,7 @@
       function FeedForward(weights, config1) {
         this.weights = weights;
         this.config = config1;
-        if (typeof this.config.output_fn === 'function') {
-          this.output_fn = this.config.output_fn;
-        } else if (this.config.output_fn === 'linear') {
-          this.output_fn = evo.util.linear;
-        } else if (this.config.output_fn === 'step') {
-          this.output_fn = evo.util.step;
-        } else {
-          this.output_fn = evo.util.tanh;
-        }
+        FeedForward.__super__.constructor.call(this, this.weights, this.config);
       }
 
       FeedForward.prototype.calc = function(input) {

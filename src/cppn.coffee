@@ -23,6 +23,7 @@ class Cppn extends Network
 
 
     @weights = copy[..]
+    super @weights, @config
 
   calc: (input)->
     # input.push 0 while input.length < @config.input
@@ -61,6 +62,6 @@ class Cppn extends Network
         # fn = @node_fn[@config.hidden_layers-1][i]
         output[j] += hidden_weights[@config.hidden_layers-1][i] * copy.pop()
 
-      output[j] = evo.util.tanh output[j]
+      output[j] = @output_fn output[j]
 
     return output
