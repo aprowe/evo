@@ -526,6 +526,18 @@ root = if window? then window else this
 
   class Network
     constructor: (@weights, @config)->
+      if typeof @config.output_fn == 'function'
+        @output_fn = @config.output_fn
+
+      else if @config.output_fn == 'linear'
+        @output_fn = evo.util.linear
+
+      else if @config.output_fn == 'step'
+        @output_fn = evo.util.step
+
+      else
+        @output_fn = evo.util.tanh
+
     calc: (input)->
 
   ## Compositional Pattern Producing Network
@@ -553,6 +565,7 @@ root = if window? then window else this
 
 
       @weights = copy[..]
+      super @weights, @config
 
     calc: (input)->
       # input.push 0 while input.length < @config.input
@@ -591,7 +604,7 @@ root = if window? then window else this
           # fn = @node_fn[@config.hidden_layers-1][i]
           output[j] += hidden_weights[@config.hidden_layers-1][i] * copy.pop()
 
-        output[j] = evo.util.tanh output[j]
+        output[j] = @output_fn output[j]
 
       return output
 
@@ -600,17 +613,7 @@ root = if window? then window else this
   class FeedForward extends Network
 
     constructor: (@weights, @config) ->
-      if typeof @config.output_fn == 'function'
-        @output_fn = @config.output_fn
-
-      else if @config.output_fn == 'linear'
-        @output_fn = evo.util.linear
-
-      else if @config.output_fn == 'step'
-        @output_fn = evo.util.step
-
-      else
-        @output_fn = evo.util.tanh
+      super @weights, @config
 
     calc: (input)->
       if input.length != @config.input_nodes
