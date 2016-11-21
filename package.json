@@ -1,6 +1,6 @@
 {
   "name": "evo-js",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Evolutionary Algorithm Tool wrapped with ANN",
   "main": "evo.js",
   "scripts": {
