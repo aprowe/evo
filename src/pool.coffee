@@ -27,9 +27,14 @@ class Pool extends Base
     ## List of previous scores
     @_history = []
 
+    @_setGeneOptions @config.gene_options
+
   #######################
   ## Public Methods
   #######################
+
+  currentSize: ->
+    return @genes.length
 
   ## Construct a Member object
   constructMember: (genes=null)->
@@ -67,6 +72,26 @@ class Pool extends Base
 
     return genes
 
+  nextGeneDict: ->
+    genes = @nextGenes()
+
+    geneDict =
+      _raw: genes
+
+    for gene, i in genes
+      name = i
+      name = @_geneOptions[i].name if @_geneOptions[i]?
+
+      if @_geneOptions[i]? && @_geneOptions[i].range?
+        if geneDict[name]?
+          geneDict[name].push(gene)
+        else
+          geneDict[name] = [gene]
+      else
+        geneDict[name] = gene
+
+    return geneDict
+
   ##Retrieve the next constructed member
   nextMember: ->
     return unless @config.on_member?
@@ -82,6 +107,9 @@ class Pool extends Base
     if genes._evo?
       score = genes._evo.score
       genes = genes._evo.genes
+
+    if genes._raw?
+      genes = genes._raw
 
     ## Push a simple object to the _scoredGenes
     @_scoredGenes.push
@@ -171,10 +199,7 @@ class Pool extends Base
     new_genes = []
 
     for g, i in genes
-      new_genes[i] = genes[i]
-
-      if Math.random() < @config.mutate_rate
-        new_genes[i] += evo.util.random() * @config.mutate_amount
+      new_genes[i] = @_mutateGene genes[i], @_geneOptions[i]
 
     return new_genes
 
@@ -282,3 +307,31 @@ class Pool extends Base
 
     ## Clear the breed pool for the next generation
     @_scoredGenes = []
+
+  _setGeneOptions: (options) =>
+    @_geneOptions = []
+
+    for option, index in options
+      if option.range?
+        for j in [option.range[0]..option.range[1]]
+          @_geneOptions[j] = option
+      else
+        @_geneOptions[index] = option
+
+  _mutateGene: (gene, options = {}) =>
+    value = gene
+
+    options.mutate_amount ||= @config.mutate_amount
+    options.mutate_rate   ||= @config.mutate_rate
+    options.precision     ||= @config.precision
+
+    for i in [0..options.precision]
+      if options.mutate_rate > evo.util.random()
+        value += evo.util.random() * options.mutate_amount * Math.exp(-i)
+
+    if options.max? && gene > options.max
+      value = options.max
+    else if options.min? && gene < options.min
+      value = options.min
+
+    return value

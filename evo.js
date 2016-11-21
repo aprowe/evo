@@ -1,11 +1,12 @@
 /**
- * evo.js v0.2.2
+ * evo.js v0.2.4
  * Evolutionary Algorithm Tool wrapped with ANN
  * Copyright (c) 2016 Alex Rowe <aprowe@ucsc.edu>
  * Licensed MIT
  **/
 (function() {
   var root,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
@@ -45,6 +46,7 @@
         cross_rate: 0.05,
         mutate_rate: 0.05,
         mutate_amount: 1.0,
+        precision: 1,
         size: 100,
         ratios: {
           top: 0.25,
@@ -62,6 +64,7 @@
           min_generations: 10,
           "while": void 0
         },
+        gene_options: [],
         on_breed: void 0,
         on_member: void 0,
         on_run: void 0,
@@ -252,6 +255,8 @@
       function Pool(config1) {
         var i, l, ref;
         this.config = config1;
+        this._mutateGene = bind(this._mutateGene, this);
+        this._setGeneOptions = bind(this._setGeneOptions, this);
         this.generation = 0;
         this.iteration = 0;
         this.genes = [];
@@ -262,7 +267,12 @@
         this._prevGenes = this.genes.slice(0);
         this._scoredGenes = [];
         this._history = [];
+        this._setGeneOptions(this.config.gene_options);
       }
+
+      Pool.prototype.currentSize = function() {
+        return this.genes.length;
+      };
 
       Pool.prototype.constructMember = function(genes) {
         var member;
@@ -297,6 +307,31 @@
         return genes;
       };
 
+      Pool.prototype.nextGeneDict = function() {
+        var gene, geneDict, genes, i, l, len, name;
+        genes = this.nextGenes();
+        geneDict = {
+          _raw: genes
+        };
+        for (i = l = 0, len = genes.length; l < len; i = ++l) {
+          gene = genes[i];
+          name = i;
+          if (this._geneOptions[i] != null) {
+            name = this._geneOptions[i].name;
+          }
+          if ((this._geneOptions[i] != null) && (this._geneOptions[i].range != null)) {
+            if (geneDict[name] != null) {
+              geneDict[name].push(gene);
+            } else {
+              geneDict[name] = [gene];
+            }
+          } else {
+            geneDict[name] = gene;
+          }
+        }
+        return geneDict;
+      };
+
       Pool.prototype.nextMember = function() {
         if (this.config.on_member == null) {
           return;
@@ -312,6 +347,9 @@
         if (genes._evo != null) {
           score = genes._evo.score;
           genes = genes._evo.genes;
+        }
+        if (genes._raw != null) {
+          genes = genes._raw;
         }
         return this._scoredGenes.push({
           genes: genes,
@@ -406,10 +444,7 @@
         new_genes = [];
         for (i = l = 0, len = genes.length; l < len; i = ++l) {
           g = genes[i];
-          new_genes[i] = genes[i];
-          if (Math.random() < this.config.mutate_rate) {
-            new_genes[i] += evo.util.random() * this.config.mutate_amount;
-          }
+          new_genes[i] = this._mutateGene(genes[i], this._geneOptions[i]);
         }
         return new_genes;
       };
@@ -511,6 +546,50 @@
         this.genes = evo.util.shuffle(this.genes);
         this.trigger('breed');
         return this._scoredGenes = [];
+      };
+
+      Pool.prototype._setGeneOptions = function(options) {
+        var index, j, l, len, option, results;
+        this._geneOptions = [];
+        results = [];
+        for (index = l = 0, len = options.length; l < len; index = ++l) {
+          option = options[index];
+          if (option.range != null) {
+            results.push((function() {
+              var n, ref, ref1, results1;
+              results1 = [];
+              for (j = n = ref = option.range[0], ref1 = option.range[1]; ref <= ref1 ? n <= ref1 : n >= ref1; j = ref <= ref1 ? ++n : --n) {
+                results1.push(this._geneOptions[j] = option);
+              }
+              return results1;
+            }).call(this));
+          } else {
+            results.push(this._geneOptions[index] = option);
+          }
+        }
+        return results;
+      };
+
+      Pool.prototype._mutateGene = function(gene, options) {
+        var i, l, ref, value;
+        if (options == null) {
+          options = {};
+        }
+        value = gene;
+        options.mutate_amount || (options.mutate_amount = this.config.mutate_amount);
+        options.mutate_rate || (options.mutate_rate = this.config.mutate_rate);
+        options.precision || (options.precision = this.config.precision);
+        for (i = l = 0, ref = options.precision; 0 <= ref ? l <= ref : l >= ref; i = 0 <= ref ? ++l : --l) {
+          if (options.mutate_rate > evo.util.random()) {
+            value += evo.util.random() * options.mutate_amount * Math.exp(-i);
+          }
+        }
+        if ((options.max != null) && gene > options.max) {
+          value = options.max;
+        } else if ((options.min != null) && gene < options.min) {
+          value = options.min;
+        }
+        return value;
       };
 
       return Pool;

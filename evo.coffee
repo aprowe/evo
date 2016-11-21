@@ -1,5 +1,5 @@
 ##
-# evo.js v0.2.2
+# evo.js v0.2.4
 # Evolutionary Algorithm Tool wrapped with ANN
 # Copyright (c) 2016 Alex Rowe <aprowe@ucsc.edu>
 # Licensed MIT
@@ -60,6 +60,9 @@ root = if window? then window else this
       ## The amount a mutatated gene can deviate from its original value
       mutate_amount: 1.0
 
+      ## The amount of exponential precision each gene is mutate to 
+      precision: 1
+
       ## The initial pool size
       size: 100
 
@@ -103,6 +106,9 @@ root = if window? then window else this
 
         ## Condition to be checked each time
         while: undefined
+
+      ## Options to specify genes
+      gene_options: []
 
       on_breed: undefined
 
@@ -266,9 +272,14 @@ root = if window? then window else this
       ## List of previous scores
       @_history = []
 
+      @_setGeneOptions @config.gene_options
+
     #######################
     ## Public Methods
     #######################
+
+    currentSize: ->
+      return @genes.length
 
     ## Construct a Member object
     constructMember: (genes=null)->
@@ -306,6 +317,26 @@ root = if window? then window else this
 
       return genes
 
+    nextGeneDict: ->
+      genes = @nextGenes()
+
+      geneDict =
+        _raw: genes
+
+      for gene, i in genes
+        name = i
+        name = @_geneOptions[i].name if @_geneOptions[i]?
+
+        if @_geneOptions[i]? && @_geneOptions[i].range?
+          if geneDict[name]?
+            geneDict[name].push(gene)
+          else
+            geneDict[name] = [gene]
+        else
+          geneDict[name] = gene
+
+      return geneDict
+
     ##Retrieve the next constructed member
     nextMember: ->
       return unless @config.on_member?
@@ -321,6 +352,9 @@ root = if window? then window else this
       if genes._evo?
         score = genes._evo.score
         genes = genes._evo.genes
+
+      if genes._raw?
+        genes = genes._raw
 
       ## Push a simple object to the _scoredGenes
       @_scoredGenes.push
@@ -410,10 +444,7 @@ root = if window? then window else this
       new_genes = []
 
       for g, i in genes
-        new_genes[i] = genes[i]
-
-        if Math.random() < @config.mutate_rate
-          new_genes[i] += evo.util.random() * @config.mutate_amount
+        new_genes[i] = @_mutateGene genes[i], @_geneOptions[i]
 
       return new_genes
 
@@ -521,6 +552,34 @@ root = if window? then window else this
 
       ## Clear the breed pool for the next generation
       @_scoredGenes = []
+
+    _setGeneOptions: (options) =>
+      @_geneOptions = []
+
+      for option, index in options
+        if option.range?
+          for j in [option.range[0]..option.range[1]]
+            @_geneOptions[j] = option
+        else
+          @_geneOptions[index] = option
+
+    _mutateGene: (gene, options = {}) =>
+      value = gene
+
+      options.mutate_amount ||= @config.mutate_amount
+      options.mutate_rate   ||= @config.mutate_rate
+      options.precision     ||= @config.precision
+
+      for i in [0..options.precision]
+        if options.mutate_rate > evo.util.random()
+          value += evo.util.random() * options.mutate_amount * Math.exp(-i)
+
+      if options.max? && gene > options.max
+        value = options.max
+      else if options.min? && gene < options.min
+        value = options.min
+
+      return value
 
   ## Network Class
 

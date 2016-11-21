@@ -14,6 +14,9 @@ evo.config =
     ## The amount a mutatated gene can deviate from its original value
     mutate_amount: 1.0
 
+    ## The amount of exponential precision each gene is mutate to 
+    precision: 1
+
     ## The initial pool size
     size: 100
 
@@ -57,6 +60,9 @@ evo.config =
 
       ## Condition to be checked each time
       while: undefined
+
+    ## Options to specify genes
+    gene_options: []
 
     on_breed: undefined
 
